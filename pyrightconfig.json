@@ -6,7 +6,7 @@
   "venvPath": ".",
   "venv": ".venv",
   "extraPaths": [
-    "packages/catalog-core",
-    "packages/query-map"
+    "packages/catalogkit-core/src",
+    "packages/catalogkit-query/src"
   ]
 }

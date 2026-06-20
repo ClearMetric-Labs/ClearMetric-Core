@@ -11,10 +11,10 @@ jobs:
       fail-fast: false
       matrix:
         package:
-          - name: catalog-core
-            path: packages/catalog-core
-          - name: query-map
-            path: packages/query-map
+          - name: catalogkit-core
+            path: packages/catalogkit-core
+          - name: catalogkit-query
+            path: packages/catalogkit-query
         python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
@@ -33,37 +33,38 @@ jobs:
 
       - name: Install package dependencies
         run: |
-          if [ "${{ matrix.package.name }}" = "query-map" ]; then
-            python -m pip install -e packages/catalog-core
+          if [ "${{ matrix.package.name }}" = "catalogkit-query" ]; then
+            python -m pip install -e packages/catalogkit-core
           fi
           python -m pip install -e "${{ matrix.package.path }}[dev,release]"
 
       - name: Run package test suite
-        run: pytest -v ${{ matrix.package.path }}/tests
+        run: python -m pytest -v ${{ matrix.package.path }}/tests
 
       - name: Build distribution artifacts
         run: |
           python -m build ${{ matrix.package.path }}
-          if [ "${{ matrix.package.name }}" = "query-map" ]; then
-            python -m build packages/catalog-core
+          if [ "${{ matrix.package.name }}" = "catalogkit-query" ]; then
+            python -m build packages/catalogkit-core
           fi
 
       - name: Validate package metadata
-        run: twine check ${{ matrix.package.path }}/dist/*
+        run: python -m twine check ${{ matrix.package.path }}/dist/*
 
       - name: Smoke test installed wheel
         run: |
           python -m venv .pkgtest
           . .pkgtest/bin/activate
           python -m pip install --upgrade pip
-          if [ "${{ matrix.package.name }}" = "catalog-core" ]; then
+          if [ "${{ matrix.package.name }}" = "catalogkit-core" ]; then
             python -m pip install ${{ matrix.package.path }}/dist/*.whl
-            python -c "import catalog_core; print(catalog_core.__version__)"
+            python -c "import catalogkit.core as core; print(core.__version__)"
           else
-            python -m pip install packages/catalog-core/dist/*.whl
+            python -m pip install packages/catalogkit-core/dist/*.whl
             python -m pip install ${{ matrix.package.path }}/dist/*.whl
-            query-map --dialect postgres packages/query-map/examples/ugly_real_world.sql
-            python -m query_map --dialect postgres packages/query-map/examples/simple.sql
+            catalogkit-query --dialect postgres packages/catalogkit-query/examples/ugly_real_world.sql
+            python -m catalogkit.query --dialect postgres packages/catalogkit-query/examples/simple.sql
+            python -c "import catalogkit.core; import catalogkit.query"
           fi
 
   repository-boundaries:
@@ -80,8 +81,46 @@ jobs:
       - name: Install package dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e packages/catalog-core
-          python -m pip install -e "packages/query-map[dev]"
+          python -m pip install -e packages/catalogkit-core
+          python -m pip install -e "packages/catalogkit-query[dev]"
 
       - name: Run repository boundary checks
-        run: pytest -v tests/test_repository_boundaries.py
+        run: python -m pytest -v tests/test_repository_boundaries.py
+
+  meta-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install release dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
+
+      - name: Build package artifacts
+        run: |
+          python -m build packages/catalogkit-core
+          python -m build packages/catalogkit-query
+          python -m build packages/catalogkit
+
+      - name: Validate package metadata
+        run: |
+          python -m twine check packages/catalogkit-core/dist/*
+          python -m twine check packages/catalogkit-query/dist/*
+          python -m twine check packages/catalogkit/dist/*
+
+      - name: Smoke test namespace package install
+        run: |
+          python -m venv .pkgmeta
+          . .pkgmeta/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install packages/catalogkit-core/dist/*.whl
+          python -m pip install packages/catalogkit-query/dist/*.whl
+          python -m pip install --no-deps packages/catalogkit/dist/*.whl
+          python -c "import catalogkit.core; import catalogkit.query"

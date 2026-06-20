@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 
 Initial public OSS release candidate.
 
+### Changed
+
+- migrated the repo to the `CatalogKit` namespace-package monorepo layout
+- renamed the shared distribution to `catalogkit-core`
+- renamed the query tool distribution to `catalogkit-query`
+- added the thin `catalogkit` meta-package for convenience installs
+
 ### Added
 
 - deterministic relation extraction for supported single-statement SQL inputs

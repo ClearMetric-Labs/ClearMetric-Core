@@ -6,6 +6,7 @@
 .venv/
 .pkgtest/
 .pkgsmoke/
+.pkgmeta/
 __pycache__/
 *.egg-info/
 *.pyc

@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "catalogkit"
+version = "0.1.0"
+description = "Convenience meta-package for installing CatalogKit modules."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [
+    {name = "ClearMetric Labs"},
+]
+dependencies = [
+    "catalogkit-core>=0.1.0",
+    "catalogkit-query>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Clearmetric-Labs/CatalogKit"
+Source = "https://github.com/Clearmetric-Labs/CatalogKit"
+Issues = "https://github.com/Clearmetric-Labs/CatalogKit/issues"
+
+[tool.setuptools]
+packages = []

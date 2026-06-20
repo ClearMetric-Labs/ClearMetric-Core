@@ -3,8 +3,9 @@ name: publish
 on:
   push:
     tags:
-      - "catalog-core-v*"
-      - "query-map-v*"
+      - "catalogkit-core-v*"
+      - "catalogkit-query-v*"
+      - "catalogkit-v*"
   workflow_dispatch:
     inputs:
       package:
@@ -12,8 +13,9 @@ on:
         required: true
         type: choice
         options:
-          - catalog-core
-          - query-map
+          - catalogkit-core
+          - catalogkit-query
+          - catalogkit
 
 permissions:
   contents: read
@@ -44,13 +46,17 @@ jobs:
           fi
 
           case "$PACKAGE" in
-            catalog-core)
-              echo "name=catalog-core" >> "$GITHUB_OUTPUT"
-              echo "path=packages/catalog-core" >> "$GITHUB_OUTPUT"
+            catalogkit-core)
+              echo "name=catalogkit-core" >> "$GITHUB_OUTPUT"
+              echo "path=packages/catalogkit-core" >> "$GITHUB_OUTPUT"
               ;;
-            query-map)
-              echo "name=query-map" >> "$GITHUB_OUTPUT"
-              echo "path=packages/query-map" >> "$GITHUB_OUTPUT"
+            catalogkit-query)
+              echo "name=catalogkit-query" >> "$GITHUB_OUTPUT"
+              echo "path=packages/catalogkit-query" >> "$GITHUB_OUTPUT"
+              ;;
+            catalogkit)
+              echo "name=catalogkit" >> "$GITHUB_OUTPUT"
+              echo "path=packages/catalogkit" >> "$GITHUB_OUTPUT"
               ;;
             *)
               echo "Unsupported package: $PACKAGE" >&2
@@ -67,7 +73,7 @@ jobs:
         run: python -m build ${{ steps.package.outputs.path }}
 
       - name: Validate package metadata
-        run: twine check ${{ steps.package.outputs.path }}/dist/*
+        run: python -m twine check ${{ steps.package.outputs.path }}/dist/*
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

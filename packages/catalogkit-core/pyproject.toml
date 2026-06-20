@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "catalogkit-core"
+dynamic = ["version"]
+description = "Shared artifact models, canonical IDs, and merge semantics for CatalogKit."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [
+    {name = "ClearMetric Labs"},
+]
+keywords = [
+    "catalog",
+    "lineage",
+    "metadata",
+    "graph",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "pydantic>=2.10.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+]
+release = [
+    "build>=1.2.2",
+    "twine>=5.1.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/Clearmetric-Labs/CatalogKit"
+Source = "https://github.com/Clearmetric-Labs/CatalogKit"
+Issues = "https://github.com/Clearmetric-Labs/CatalogKit/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "catalogkit.core._version.__version__"}
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["catalogkit.core*"]
+namespaces = true

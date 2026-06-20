@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "catalogkit-query"
+dynamic = ["version"]
+description = "Map one SQL statement into deterministic CatalogKit dependencies."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [
+    {name = "ClearMetric Labs"},
+]
+keywords = [
+    "sql",
+    "lineage",
+    "dependencies",
+    "ctes",
+    "sqlglot",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Database",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "catalogkit-core>=0.1.0",
+    "sqlglot>=25.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+]
+release = [
+    "build>=1.2.2",
+    "twine>=5.1.1",
+]
+
+[project.scripts]
+catalogkit-query = "catalogkit.query.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Clearmetric-Labs/CatalogKit"
+Source = "https://github.com/Clearmetric-Labs/CatalogKit"
+Issues = "https://github.com/Clearmetric-Labs/CatalogKit/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "catalogkit.query._version.__version__"}
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["catalogkit.query*"]
+namespaces = true
