@@ -139,9 +139,7 @@ def test_unresolved_output_source_warning_is_emitted_for_table_star_alias_fixtur
     lineage_map = build_lineage_map(fixture_root, dialect="postgres")
 
     assert any(warning.code == "select_star" for warning in lineage_map.warnings)
-    assert any(
-        warning.code == "unresolved_output_source" for warning in lineage_map.warnings
-    )
+    assert not any(edge.kind == "derives_from" for edge in lineage_map.edges)
 
 
 def test_unresolved_lineage_warning_is_emitted_for_flagged_shopify_column():
@@ -157,6 +155,7 @@ def test_unresolved_lineage_warning_is_emitted_for_flagged_shopify_column():
 
     assert any(
         warning.code == "unresolved_lineage"
-        and warning.subject_id == "column:stg_shopify__order.order_id"
+        and warning.subject_id
+        == "column:stg_shopify__discount_allocation._fivetran_synced"
         for warning in artifact.warnings
     )

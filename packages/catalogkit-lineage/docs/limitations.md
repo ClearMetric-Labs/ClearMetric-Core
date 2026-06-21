@@ -98,11 +98,11 @@ Validation against the committed corpus shows:
 
 | Fixture | Total columns | Resolved | Flagged | Source leaf | Silent | Notes |
 |---|---:|---:|---:|---:|---:|---|
-| `jaffle_shop` | 38 | 27 | 0 | 11 | 0 | Clean baseline dbt fixture. |
-| `loom_finance` | 10 | 4 | 0 | 6 | 0 | Small duckdb slice with one star warning. |
-| `loom_marketing` | 11 | 4 | 0 | 7 | 0 | Small duckdb slice with one star warning. |
-| `shopify` | 1006 | 714 | 7 | 285 | 0 | Production-shaped closure with macro source metadata; 0.7% flagged on local models. |
-| `sql_folder` | 7 | 7 | 0 | 0 | 0 | Plain SQL path. |
+| `jaffle_shop` | 38 | 0 | 27 | 11 | 0 | Star-heavy staging; strict R6 suppresses column edges. |
+| `loom_finance` | 10 | 0 | 4 | 6 | 0 | Star projection on staging model. |
+| `loom_marketing` | 11 | 0 | 4 | 7 | 0 | Star projection on staging model. |
+| `shopify` | 436 | 0 | 436 | 0 | 0 | Production-shaped closure; star-heavy compiled SQL flagged under strict R6. |
+| `sql_folder` | 7 | 7 | 0 | 0 | 0 | Explicit projections only; full column lineage. |
 
 Observed behavior from that sweep:
 
@@ -139,6 +139,25 @@ re-projection: when an output column is projected from a CTE, the filter uses
 the shallowest downstream expression that still contains predicate logic (for
 example `SUM(CASE WHEN ... THEN amount ...)`) rather than the outer column
 reference alone.
+
+### Strict value-lineage rules (R6–R8)
+
+Under strict value-lineage, warnings and edges do not coexist for the same
+failure mode:
+
+- **R6 (`select_star`):** When `SELECT *` or `alias.*` is present, the engine
+  emits `select_star` and does **not** enumerate star-expanded outputs as
+  `derives_from` edges. Explicit non-star projections still resolve.
+- **R7 (UNION):** When SQL contains `UNION` / `UNION ALL`, the engine emits
+  `unresolved_lineage` and does **not** emit positional branch-merge edges.
+- **R8 (quoted / unresolved outputs):** When an output column is flagged
+  `unresolved_lineage` because quoting or normalization prevents confident
+  resolution, the engine does **not** emit `derives_from` for that column.
+
+The enterprise adversarial manifest validates these rules against an independent
+hand-derived oracle (`value_lineage_expected.yml`): 39 adversarial model edges +
+14 staging source edges = **53** total under strict semantics (down from 70 when
+star/union/quoted paths hybrid-warned and edge-enumerated).
 
 ### Residual limits
 

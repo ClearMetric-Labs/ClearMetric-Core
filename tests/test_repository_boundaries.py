@@ -38,6 +38,21 @@ PROPRIETARY_IMPORT_PREFIXES = (
     "services",
     "shared_config",
 )
+IGNORED_PATH_PARTS = {
+    ".pkgmeta",
+    ".pkgsmoke",
+    ".pkgtest",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+}
+
+
+def _is_ignored_package_path(path: Path) -> bool:
+    return any(
+        part in IGNORED_PATH_PARTS or part.endswith(".egg-info") for part in path.parts
+    )
 
 
 def test_tool_packages_only_depend_on_catalogkit_core_and_themselves():
@@ -47,6 +62,8 @@ def test_tool_packages_only_depend_on_catalogkit_core_and_themselves():
         allowed_modules = ALLOWED_MODULES_BY_PACKAGE[package_name]
 
         for path in package_root.rglob("*.py"):
+            if _is_ignored_package_path(path):
+                continue
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             for node in ast.walk(tree):
                 if isinstance(node, ast.Import):
@@ -75,6 +92,8 @@ def test_tool_packages_do_not_import_enterprise_or_proprietary_prefixes():
 
     for package_root in PACKAGE_SOURCE_ROOTS.values():
         for path in package_root.rglob("*.py"):
+            if _is_ignored_package_path(path):
+                continue
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             for node in ast.walk(tree):
                 if isinstance(node, ast.Import):
@@ -97,7 +116,7 @@ def test_shared_model_class_names_exist_only_in_catalogkit_core():
     )
 
     for path in PACKAGES_ROOT.rglob("*.py"):
-        if path == core_models_path:
+        if path == core_models_path or _is_ignored_package_path(path):
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):

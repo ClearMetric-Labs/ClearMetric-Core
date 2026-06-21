@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from catalogkit.core import (
+    CanonicalIdError,
     CatalogArtifact,
     Edge,
     Evidence,
@@ -15,6 +16,7 @@ from catalogkit.core import (
     leaf_name,
     merge,
     normalize_identifier,
+    normalize_identifier_part,
     schema_name,
     split_qualified_identifier,
     table_id,
@@ -33,9 +35,13 @@ from .graph import (
 from .loaders import ProjectDataset, ProjectInput
 from .models import LineageMap, LineageSummary, TraversalResult
 from .sql_analyzer import (
-    detect_select_star,
+    analyze_sql_statement,
     filter_value_lineage_refs,
-    list_table_references,
+    has_select_star_projection,
+    is_star_suppressed_output,
+    quoted_alias_output_columns,
+    star_expansion_policy,
+    uses_aliased_table_star,
 )
 
 
@@ -50,6 +56,7 @@ class DatasetResolutionState:
     output_map_keys: set[str]
     columns_with_edges: set[str]
     columns_with_warnings: set[str]
+    columns_star_suppressed: set[str]
 
 
 def build_catalog_artifact_from_project(
@@ -212,7 +219,6 @@ def _build_lineage(project: ProjectInput, *, dialect: str) -> BuiltLineage:
         if dataset.kind != "local":
             continue
         _add_dependency_edges(nodes_by_id, edges, dataset, project=project)
-        _add_query_warnings(warnings, dataset, dialect=dialect)
         resolution_by_dataset[dataset.name] = _add_lineage_edges(
             nodes_by_id,
             edges,
@@ -348,26 +354,6 @@ def _add_dependency_edges(
         )
 
 
-def _add_query_warnings(
-    warnings: list[Warning],
-    dataset: ProjectDataset,
-    *,
-    dialect: str,
-) -> None:
-    try:
-        has_select_star = detect_select_star(dataset.sql or "", dialect=dialect)
-    except LineageInputError:
-        return
-    if has_select_star:
-        _emit_column_warning(
-            warnings,
-            code="select_star",
-            dataset=dataset,
-            column_name=None,
-            message="SELECT * was detected; output mapping may stay warning-rich.",
-        )
-
-
 def _add_lineage_edges(
     nodes_by_id: dict[str, Node],
     edges: list[Edge],
@@ -381,14 +367,45 @@ def _add_lineage_edges(
         output_map_keys=set(),
         columns_with_edges=set(),
         columns_with_warnings=set(),
+        columns_star_suppressed=set(),
     )
     try:
+        statement_analysis = analyze_sql_statement(dataset.sql or "", dialect=dialect)
+    except LineageInputError:
+        statement_analysis = None
+    if statement_analysis is None:
+        known_relation_names: set[str] = set()
+        alias_map: dict[str, str] = {}
+        cte_name_set: set[str] = set()
+        aliased_table_star = False
+        star_policy = None
+        quoted_outputs: frozenset[str] = frozenset()
+        has_union = False
+        has_select_star = False
+    else:
         known_relation_names = {
             normalize_identifier(reference)
-            for reference in list_table_references(dataset.sql or "", dialect=dialect)
+            for reference in statement_analysis.table_references
         }
-    except LineageInputError:
-        known_relation_names = set()
+        alias_map = statement_analysis.alias_map
+        cte_name_set = statement_analysis.cte_names
+        aliased_table_star = uses_aliased_table_star(statement_analysis)
+        has_select_star = has_select_star_projection(statement_analysis)
+        if has_select_star:
+            _emit_column_warning(
+                warnings,
+                code="select_star",
+                dataset=dataset,
+                column_name=None,
+                message="SELECT * was detected; output mapping may stay warning-rich.",
+            )
+        star_policy = (
+            star_expansion_policy(statement_analysis, project=project)
+            if has_select_star
+            else None
+        )
+        quoted_outputs = quoted_alias_output_columns(statement_analysis)
+        has_union = statement_analysis.has_union
     try:
         output_map = lineage(
             None,
@@ -424,20 +441,50 @@ def _add_lineage_edges(
                 ),
             )
             continue
-        state.output_map_keys.add(output_name)
+        normalized_output = normalize_identifier_part(output_name)
+        state.output_map_keys.add(normalized_output)
         _add_column_node(nodes_by_id, dataset.name, output_name, dataset.evidence_file)
+        if has_union:
+            continue
+        if has_select_star and is_star_suppressed_output(output_name, star_policy):
+            state.columns_star_suppressed.add(normalized_output)
+            continue
+        if normalized_output in quoted_outputs:
+            _emit_column_warning(
+                warnings,
+                code="unresolved_lineage",
+                dataset=dataset,
+                column_name=output_name,
+                message=(
+                    "Quoted output identifier declined for value-lineage edge emission on "
+                    f"{dataset.name}.{output_name}."
+                ),
+                state=state,
+            )
+            continue
         source_id = column_id(dataset.name, output_name)
-        all_refs = {
-            ref
-            for ref in _collect_all_refs(root)
-            if ref != output_name and ref != f"{dataset.name}.{output_name}"
-        }
-        local_refs = {
-            ref
-            for ref in all_refs
-            if _is_local_ref(ref, project=project, current_dataset=dataset.name)
-        }
-        selected_refs = local_refs or _collect_leaf_refs(root)
+        immediate_refs = _collect_immediate_upstream_refs(
+            root,
+            project=project,
+            dataset=dataset,
+            alias_map=alias_map,
+            cte_names=cte_name_set,
+            known_relation_names=known_relation_names,
+        )
+        if immediate_refs:
+            selected_refs = immediate_refs
+        else:
+            all_refs = {
+                ref
+                for ref in _collect_all_refs(root)
+                if ref != output_name and ref != f"{dataset.name}.{output_name}"
+            }
+            local_refs = {
+                ref
+                for ref in all_refs
+                if _is_local_ref(ref, project=project, current_dataset=dataset.name)
+            }
+            selected_refs = local_refs or _collect_leaf_refs(root)
         if selected_refs != {"*"}:
             original_selected_refs = set(selected_refs)
             filtered_refs = filter_value_lineage_refs(
@@ -472,6 +519,23 @@ def _add_lineage_edges(
                     )
                 continue
             selected_refs = filtered_refs
+        if (
+            aliased_table_star
+            and selected_refs
+            and _refs_target_only_root_datasets(selected_refs, project=project)
+        ):
+            _emit_column_warning(
+                warnings,
+                code="unresolved_output_source",
+                dataset=dataset,
+                column_name=output_name,
+                message=(
+                    "Alias-qualified table star projection did not resolve to a "
+                    f"concrete local dataset for output column {dataset.name}.{output_name}."
+                ),
+                state=state,
+            )
+            continue
         if not selected_refs:
             _emit_column_warning(
                 warnings,
@@ -499,7 +563,10 @@ def _add_lineage_edges(
                     state=state,
                 )
                 continue
-            parent_name, source_column = _split_ref(leaf_ref)
+            parsed_ref = _try_split_ref(leaf_ref)
+            if parsed_ref is None:
+                continue
+            parent_name, source_column = parsed_ref
             if (
                 parent_name not in project.datasets
                 and parent_name not in project.root_schema()
@@ -549,7 +616,7 @@ def _add_lineage_edges(
                     else [],
                 )
             )
-            state.columns_with_edges.add(output_name)
+            state.columns_with_edges.add(normalized_output)
     return state
 
 
@@ -568,15 +635,21 @@ def _reconcile_column_coverage(
                 output_map_keys=set(),
                 columns_with_edges=set(),
                 columns_with_warnings=set(),
+                columns_star_suppressed=set(),
             ),
         )
         column_names = sorted({*dataset.declared_columns, *state.output_map_keys})
         for column_name in column_names:
+            normalized_column = normalize_identifier_part(column_name)
             subject_id = column_id(dataset.name, column_name)
-            if column_name in state.columns_with_edges or _warning_exists(
-                warnings,
-                code="unresolved_lineage",
-                subject_id=subject_id,
+            if (
+                normalized_column in state.columns_with_edges
+                or normalized_column in state.columns_star_suppressed
+                or _warning_exists(
+                    warnings,
+                    code="unresolved_lineage",
+                    subject_id=subject_id,
+                )
             ):
                 continue
             _emit_column_warning(
@@ -614,7 +687,7 @@ def _emit_column_warning(
         )
     )
     if state is not None and column_name is not None:
-        state.columns_with_warnings.add(column_name)
+        state.columns_with_warnings.add(normalize_identifier_part(column_name))
 
 
 def _warning_exists(
@@ -627,6 +700,196 @@ def _warning_exists(
         warning.code == code and warning.subject_id == subject_id
         for warning in warnings
     )
+
+
+def _collect_immediate_upstream_refs(
+    root: SqlglotLineageNode,
+    *,
+    project: ProjectInput,
+    dataset: ProjectDataset,
+    alias_map: dict[str, str],
+    cte_names: set[str],
+    known_relation_names: set[str],
+) -> set[str]:
+    refs: set[str] = set()
+    for child in root.downstream:
+        refs.update(
+            _refs_from_lineage_subtree(
+                child,
+                project=project,
+                dataset=dataset,
+                alias_map=alias_map,
+                cte_names=cte_names,
+            )
+        )
+    return _remap_root_sources_to_local_deps(
+        refs,
+        project=project,
+        dataset=dataset,
+        known_relation_names=known_relation_names,
+    )
+
+
+def _refs_from_lineage_subtree(
+    node: SqlglotLineageNode,
+    *,
+    project: ProjectInput,
+    dataset: ProjectDataset,
+    alias_map: dict[str, str],
+    cte_names: set[str],
+) -> set[str]:
+    parsed = _try_split_ref(node.name)
+    if parsed is not None:
+        parent_name, column_name = parsed
+        parent_key = normalize_identifier_part(parent_name)
+        if parent_key in alias_map:
+            parent_key = alias_map[parent_key]
+        if parent_key in cte_names or _is_derived_scope_name(
+            parent_key,
+            project=project,
+            alias_map=alias_map,
+            cte_names=cte_names,
+        ):
+            scoped_refs: set[str] = set()
+            for child in node.downstream:
+                scoped_refs.update(
+                    _refs_from_lineage_subtree(
+                        child,
+                        project=project,
+                        dataset=dataset,
+                        alias_map=alias_map,
+                        cte_names=cte_names,
+                    )
+                )
+            return scoped_refs
+        return {normalize_identifier(f"{parent_key}.{column_name}")}
+    if node.downstream:
+        downstream_refs: set[str] = set()
+        for child in node.downstream:
+            downstream_refs.update(
+                _refs_from_lineage_subtree(
+                    child,
+                    project=project,
+                    dataset=dataset,
+                    alias_map=alias_map,
+                    cte_names=cte_names,
+                )
+            )
+        return downstream_refs
+    return _expand_unqualified_column_ref(
+        node.name,
+        project=project,
+        dataset=dataset,
+    )
+
+
+def _expand_unqualified_column_ref(
+    column_name: str,
+    *,
+    project: ProjectInput,
+    dataset: ProjectDataset,
+) -> set[str]:
+    try:
+        column_key = normalize_identifier_part(column_name)
+    except CanonicalIdError:
+        return set()
+    matches: set[str] = set()
+    for dependency_name in dataset.dependency_names:
+        dependency = project.datasets.get(dependency_name)
+        if dependency is None:
+            continue
+        declared = {
+            normalize_identifier_part(name) for name in dependency.declared_columns
+        }
+        if column_key in declared:
+            matches.add(normalize_identifier(f"{dependency_name}.{column_key}"))
+    return matches
+
+
+def _remap_root_sources_to_local_deps(
+    refs: set[str],
+    *,
+    project: ProjectInput,
+    dataset: ProjectDataset,
+    known_relation_names: set[str],
+) -> set[str]:
+    remapped: set[str] = set()
+    root_schema = project.root_schema()
+    for ref in refs:
+        parsed = _try_split_ref(ref)
+        if parsed is None:
+            continue
+        parent_name, column_name = parsed
+        parent_key = normalize_identifier_part(parent_name)
+        if parent_key not in root_schema:
+            remapped.add(normalize_identifier(f"{parent_key}.{column_name}"))
+            continue
+        if parent_key in known_relation_names:
+            remapped.add(normalize_identifier(f"{parent_key}.{column_name}"))
+            continue
+        local_matches = [
+            dependency_name
+            for dependency_name in dataset.dependency_names
+            if _local_model_sources_root(
+                project,
+                dependency_name=dependency_name,
+                root_name=parent_key,
+            )
+        ]
+        if len(local_matches) == 1:
+            remapped.add(normalize_identifier(f"{local_matches[0]}.{column_name}"))
+            continue
+        remapped.add(normalize_identifier(f"{parent_key}.{column_name}"))
+    return remapped
+
+
+def _local_model_sources_root(
+    project: ProjectInput,
+    *,
+    dependency_name: str,
+    root_name: str,
+) -> bool:
+    dependency = project.datasets.get(dependency_name)
+    if dependency is None or dependency.kind != "local":
+        return False
+    return root_name in {
+        normalize_identifier_part(name) for name in dependency.dependency_names
+    }
+
+
+def _is_derived_scope_name(
+    parent_key: str,
+    *,
+    project: ProjectInput,
+    alias_map: dict[str, str],
+    cte_names: set[str],
+) -> bool:
+    if parent_key in cte_names:
+        return True
+    if parent_key in project.datasets or parent_key in project.root_schema():
+        return False
+    if parent_key in alias_map:
+        return False
+    return True
+
+
+def _refs_target_only_root_datasets(
+    refs: set[str],
+    *,
+    project: ProjectInput,
+) -> bool:
+    if not refs:
+        return False
+    for ref in refs:
+        parsed = _try_split_ref(ref)
+        if parsed is None:
+            return False
+        parent_name, _column_name = parsed
+        parent_key = normalize_identifier_part(parent_name)
+        dataset = project.datasets.get(parent_key)
+        if dataset is None or dataset.kind != "root":
+            return False
+    return True
 
 
 def _collect_leaf_refs(node: SqlglotLineageNode) -> set[str]:
@@ -669,6 +932,13 @@ def _split_ref(reference: str) -> tuple[str, str]:
             f"Expected qualified lineage reference, got {reference!r}."
         )
     return ".".join(parts[:-1]), parts[-1]
+
+
+def _try_split_ref(reference: str) -> tuple[str, str] | None:
+    try:
+        return _split_ref(reference)
+    except LineageContractError:
+        return None
 
 
 def _selection_to_column_id(selection: str) -> str:

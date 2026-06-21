@@ -3,7 +3,3 @@ mode: warnings
 derives_from: []
 warnings:
   - {code: select_star, dataset: report}
-  - {code: unresolved_output_source, dataset: report}
-  - {code: unresolved_output_source, dataset: report}
-  - {code: unresolved_lineage, dataset: report}
-  - {code: unresolved_lineage, dataset: report}

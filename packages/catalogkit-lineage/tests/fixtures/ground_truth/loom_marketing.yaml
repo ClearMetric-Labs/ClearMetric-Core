@@ -1,22 +1,19 @@
 project_path: ../projects/loom_marketing/manifest.json
 dialect: duckdb
 probes:
-  - selection: campaign_events.clicks
-    expected_upstream: []
-    expected_downstream:
-      - column:fct_clicks_by_customer.total_clicks
-    expected_warnings: []
-  - selection: fct_clicks_by_customer.customer_tier
-    expected_upstream:
-      - column:dim_customers.customer_tier
-    expected_downstream: []
-    expected_warnings:
-      - code: select_star
-        dataset: fct_clicks_by_customer
-  - selection: fct_clicks_by_customer.total_clicks
-    expected_upstream:
-      - column:campaign_events.clicks
-    expected_downstream: []
-    expected_warnings:
-      - code: select_star
-        dataset: fct_clicks_by_customer
+- selection: campaign_events.clicks
+  expected_upstream: []
+  expected_downstream: []
+  expected_warnings: []
+- selection: fct_clicks_by_customer.customer_tier
+  expected_upstream: []
+  expected_downstream: []
+  expected_warnings:
+  - code: select_star
+    dataset: fct_clicks_by_customer
+- selection: fct_clicks_by_customer.total_clicks
+  expected_upstream: []
+  expected_downstream: []
+  expected_warnings:
+  - code: select_star
+    dataset: fct_clicks_by_customer

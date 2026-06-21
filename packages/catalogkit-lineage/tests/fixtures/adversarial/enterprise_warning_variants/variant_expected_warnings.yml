@@ -1,0 +1,37 @@
+# Expected WARNING behavior for the variant models.
+#
+# PURPOSE: prove each warning tracks its CAUSE (a SQL category) rather than the
+# incidental shape of the original adv_NN model. Tests assert both halves:
+#   1) expected warning code present
+#   2) derives_from count is zero for union variants (suppression half)
+#
+# This file is test input only — not engine logic.
+
+version: 1
+
+union_category:
+  expected_warning: unresolved_lineage
+  must_warn:
+    - var_union_a_diff_count
+    - var_union_b_plain_union
+    - var_union_c_three_branch
+  require_zero_edges: true
+
+window_category:
+  expected_warning_any_of: [unresolved_lineage, unresolved_output_source]
+  must_warn:
+    - var_window_a_no_order
+    - var_window_b_named_window
+    - var_window_c_lag
+  must_not_become_edges:
+    - stg_a.user_id
+    - stg_a.created_at
+
+quoted_ident_category:
+  expected_warning: unresolved_lineage
+  must_warn:
+    - var_quoted_b_quoted_lower
+    - var_quoted_c_quoted_source_col
+  must_not_warn:
+    - var_quoted_a_simple_alias
+  control_expected_edges: 3

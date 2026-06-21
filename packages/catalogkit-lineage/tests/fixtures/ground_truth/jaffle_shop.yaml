@@ -1,38 +1,23 @@
 project_path: ../projects/jaffle_shop/manifest.json
 dialect: postgres
 probes:
-  # Verified by manual SQL trace and the step0 sqlglot reverse-scan baseline.
-  - selection: raw_payments.amount
-    expected_upstream: []
-    expected_downstream:
-      - column:customers.customer_lifetime_value
-      - column:orders.amount
-      - column:orders.bank_transfer_amount
-      - column:orders.coupon_amount
-      - column:orders.credit_card_amount
-      - column:orders.gift_card_amount
-      - column:stg_payments.amount
-    expected_warnings: []
-  # Verified by manual SQL trace and current compiled model structure.
-  - selection: customers.customer_lifetime_value
-    expected_upstream:
-      - column:raw_payments.amount
-      - column:stg_payments.amount
-    expected_downstream: []
-    expected_warnings:
-      - code: select_star
-        dataset: customers
-  - selection: stg_orders.order_id
-    expected_upstream:
-      - column:raw_orders.id
-    expected_downstream:
-      - column:customers.number_of_orders
-      - column:orders.order_id
-    expected_warnings:
-      - code: select_star
-        dataset: stg_orders
-  - selection: raw_payments.payment_method
-    expected_upstream: []
-    expected_downstream:
-      - column:stg_payments.payment_method
-    expected_warnings: []
+- selection: raw_payments.amount
+  expected_upstream: []
+  expected_downstream: []
+  expected_warnings: []
+- selection: customers.customer_lifetime_value
+  expected_upstream: []
+  expected_downstream: []
+  expected_warnings:
+  - code: select_star
+    dataset: customers
+- selection: stg_orders.order_id
+  expected_upstream: []
+  expected_downstream: []
+  expected_warnings:
+  - code: select_star
+    dataset: stg_orders
+- selection: raw_payments.payment_method
+  expected_upstream: []
+  expected_downstream: []
+  expected_warnings: []

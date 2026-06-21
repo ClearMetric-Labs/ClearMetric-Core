@@ -1,22 +1,19 @@
 project_path: ../projects/loom_finance/manifest.json
 dialect: duckdb
 probes:
-  - selection: orders.amount
-    expected_upstream: []
-    expected_downstream:
-      - column:fct_revenue_by_customer.total_revenue
-    expected_warnings: []
-  - selection: fct_revenue_by_customer.customer_name
-    expected_upstream:
-      - column:dim_customers.customer_name
-    expected_downstream: []
-    expected_warnings:
-      - code: select_star
-        dataset: fct_revenue_by_customer
-  - selection: fct_revenue_by_customer.total_revenue
-    expected_upstream:
-      - column:orders.amount
-    expected_downstream: []
-    expected_warnings:
-      - code: select_star
-        dataset: fct_revenue_by_customer
+- selection: orders.amount
+  expected_upstream: []
+  expected_downstream: []
+  expected_warnings: []
+- selection: fct_revenue_by_customer.customer_name
+  expected_upstream: []
+  expected_downstream: []
+  expected_warnings:
+  - code: select_star
+    dataset: fct_revenue_by_customer
+- selection: fct_revenue_by_customer.total_revenue
+  expected_upstream: []
+  expected_downstream: []
+  expected_warnings:
+  - code: select_star
+    dataset: fct_revenue_by_customer

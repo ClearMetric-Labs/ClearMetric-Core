@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from collections import Counter
+from typing import Iterable, Literal
 
 from catalogkit.core import CatalogArtifact, Edge, Warning, split_qualified_identifier
 
@@ -11,6 +12,17 @@ TraversalDirection = Literal["upstream", "downstream"]
 
 def derives_from_edges(artifact: CatalogArtifact) -> list[Edge]:
     return [edge for edge in artifact.edges if edge.kind == "derives_from"]
+
+
+def derives_from_counts_by_source_dataset(edges: Iterable[Edge]) -> dict[str, int]:
+    """Count value-lineage edges grouped by output (source) dataset name."""
+    counts: Counter[str] = Counter()
+    for edge in edges:
+        if edge.kind != "derives_from":
+            continue
+        dataset_name, _column_name = column_selection_from_id(edge.source_id)
+        counts[dataset_name] += 1
+    return dict(counts)
 
 
 def upstream_adjacency(artifact: CatalogArtifact) -> dict[str, list[str]]:

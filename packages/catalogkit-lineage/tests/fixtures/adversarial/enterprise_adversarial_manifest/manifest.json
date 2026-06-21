@@ -1,0 +1,624 @@
+{
+  "nodes": {
+    "source.adv.raw.table_a": {
+      "resource_type": "source",
+      "name": "table_a",
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "user_id": {
+          "name": "user_id"
+        },
+        "amount": {
+          "name": "amount"
+        },
+        "status": {
+          "name": "status"
+        },
+        "created_at": {
+          "name": "created_at"
+        }
+      }
+    },
+    "source.adv.raw.table_b": {
+      "resource_type": "source",
+      "name": "table_b",
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "user_id": {
+          "name": "user_id"
+        },
+        "amount": {
+          "name": "amount"
+        },
+        "status": {
+          "name": "status"
+        },
+        "region": {
+          "name": "region"
+        }
+      }
+    },
+    "source.adv.raw.users": {
+      "resource_type": "source",
+      "name": "users",
+      "columns": {
+        "user_id": {
+          "name": "user_id"
+        },
+        "email": {
+          "name": "email"
+        },
+        "country": {
+          "name": "country"
+        },
+        "created_at": {
+          "name": "created_at"
+        }
+      }
+    },
+    "model.adv.stg_a": {
+      "resource_type": "model",
+      "name": "stg_a",
+      "raw_code": "-- base table A\nselect\n    id,\n    user_id,\n    amount,\n    status,\n    created_at\nfrom {{ source('raw', 'table_a') }}\n",
+      "compiled_code": "-- base table A\nselect\n    id,\n    user_id,\n    amount,\n    status,\n    created_at\nfrom table_a\n",
+      "depends_on": {
+        "nodes": [
+          "source.adv.raw.table_a"
+        ]
+      },
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "user_id": {
+          "name": "user_id"
+        },
+        "amount": {
+          "name": "amount"
+        },
+        "status": {
+          "name": "status"
+        },
+        "created_at": {
+          "name": "created_at"
+        }
+      }
+    },
+    "model.adv.stg_b": {
+      "resource_type": "model",
+      "name": "stg_b",
+      "raw_code": "-- base table B; deliberately shares column names with stg_a (amount, status)\nselect\n    id,\n    user_id,\n    amount,\n    status,\n    region\nfrom {{ source('raw', 'table_b') }}\n",
+      "compiled_code": "-- base table B; deliberately shares column names with stg_a (amount, status)\nselect\n    id,\n    user_id,\n    amount,\n    status,\n    region\nfrom table_b\n",
+      "depends_on": {
+        "nodes": [
+          "source.adv.raw.table_b"
+        ]
+      },
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "user_id": {
+          "name": "user_id"
+        },
+        "amount": {
+          "name": "amount"
+        },
+        "status": {
+          "name": "status"
+        },
+        "region": {
+          "name": "region"
+        }
+      }
+    },
+    "model.adv.stg_users": {
+      "resource_type": "model",
+      "name": "stg_users",
+      "raw_code": "select\n    user_id,\n    email,\n    country,\n    created_at\nfrom {{ source('raw', 'users') }}\n",
+      "compiled_code": "select\n    user_id,\n    email,\n    country,\n    created_at\nfrom users\n",
+      "depends_on": {
+        "nodes": [
+          "source.adv.raw.users"
+        ]
+      },
+      "columns": {
+        "user_id": {
+          "name": "user_id"
+        },
+        "email": {
+          "name": "email"
+        },
+        "country": {
+          "name": "country"
+        },
+        "created_at": {
+          "name": "created_at"
+        }
+      }
+    },
+    "model.adv.adv_01_select_star": {
+      "resource_type": "model",
+      "name": "adv_01_select_star",
+      "raw_code": "-- All output columns come from stg_a. Parser must expand * to stg_a's column set.\nselect *\nfrom {{ ref('stg_a') }}\nwhere status = 'active'\n",
+      "compiled_code": "-- All output columns come from stg_a. Parser must expand * to stg_a's column set.\nselect *\nfrom stg_a\nwhere status = 'active'\n",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a"
+        ]
+      },
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "user_id": {
+          "name": "user_id"
+        },
+        "amount": {
+          "name": "amount"
+        },
+        "status": {
+          "name": "status"
+        },
+        "created_at": {
+          "name": "created_at"
+        }
+      }
+    },
+    "model.adv.adv_02_qualified_star": {
+      "resource_type": "model",
+      "name": "adv_02_qualified_star",
+      "raw_code": "-- a.* expands to stg_a columns only; email is the lone explicit add from stg_users.\nselect\n    a.*,\n    u.email\nfrom {{ ref('stg_a') }} a\nleft join {{ ref('stg_users') }} u on a.user_id = u.user_id\n",
+      "compiled_code": "-- a.* expands to stg_a columns only; email is the lone explicit add from stg_users.\nselect\n    a.*,\n    u.email\nfrom stg_a a\nleft join stg_users u on a.user_id = u.user_id\n",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a",
+          "model.adv.stg_users"
+        ]
+      },
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "user_id": {
+          "name": "user_id"
+        },
+        "amount": {
+          "name": "amount"
+        },
+        "status": {
+          "name": "status"
+        },
+        "created_at": {
+          "name": "created_at"
+        },
+        "email": {
+          "name": "email"
+        }
+      }
+    },
+    "model.adv.adv_03_union": {
+      "resource_type": "model",
+      "name": "adv_03_union",
+      "raw_code": "-- output col \"amount\" derives from stg_a.amount AND stg_b.amount (positional union).\n-- output col \"source_label\" is a literal (no lineage).\nselect\n    id,\n    amount,\n    'a' as source_label\nfrom {{ ref('stg_a') }}\nunion all\nselect\n    id,\n    amount,\n    'b' as source_label\nfrom {{ ref('stg_b') }}\n",
+      "compiled_code": "-- output col \"amount\" derives from stg_a.amount AND stg_b.amount (positional union).\n-- output col \"source_label\" is a literal (no lineage).\nselect\n    id,\n    amount,\n    'a' as source_label\nfrom stg_a\nunion all\nselect\n    id,\n    amount,\n    'b' as source_label\nfrom stg_b\n",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a",
+          "model.adv.stg_b"
+        ]
+      },
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "amount": {
+          "name": "amount"
+        },
+        "source_label": {
+          "name": "source_label"
+        }
+      }
+    },
+    "model.adv.adv_04_ambiguous_column": {
+      "resource_type": "model",
+      "name": "adv_04_ambiguous_column",
+      "raw_code": "-- \"amount\" and \"status\" are unqualified but exist in BOTH stg_a and stg_b.\n-- \"user_id\" is the join key, present in both. Resolver must decide/flag.\n-- created_at exists only in stg_a so it is unambiguous.\nselect\n    user_id,\n    amount,\n    status,\n    created_at\nfrom {{ ref('stg_a') }} a\njoin {{ ref('stg_b') }} b on a.id = b.id\n",
+      "compiled_code": "-- \"amount\" and \"status\" are unqualified but exist in BOTH stg_a and stg_b.\n-- \"user_id\" is the join key, present in both. Resolver must decide/flag.\n-- created_at exists only in stg_a so it is unambiguous.\nselect\n    user_id,\n    amount,\n    status,\n    created_at\nfrom stg_a a\njoin stg_b b on a.id = b.id\n",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a",
+          "model.adv.stg_b"
+        ]
+      },
+      "columns": {
+        "user_id": {
+          "name": "user_id"
+        },
+        "amount": {
+          "name": "amount"
+        },
+        "status": {
+          "name": "status"
+        },
+        "created_at": {
+          "name": "created_at"
+        }
+      }
+    },
+    "model.adv.adv_05_self_join": {
+      "resource_type": "model",
+      "name": "adv_05_self_join",
+      "raw_code": "-- child.user_id and parent_user_id both trace to stg_a.user_id (different rows, same lineage).\nselect\n    child.id          as id,\n    child.user_id     as user_id,\n    parent.user_id    as parent_user_id,\n    parent.amount     as parent_amount\nfrom {{ ref('stg_a') }} child\nleft join {{ ref('stg_a') }} parent on child.user_id = parent.id\n",
+      "compiled_code": "-- child.user_id and parent_user_id both trace to stg_a.user_id (different rows, same lineage).\nselect\n    child.id          as id,\n    child.user_id     as user_id,\n    parent.user_id    as parent_user_id,\n    parent.amount     as parent_amount\nfrom stg_a child\nleft join stg_a parent on child.user_id = parent.id\n",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a",
+          "model.adv.stg_a"
+        ]
+      },
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "user_id": {
+          "name": "user_id"
+        },
+        "parent_user_id": {
+          "name": "parent_user_id"
+        },
+        "parent_amount": {
+          "name": "parent_amount"
+        }
+      }
+    },
+    "model.adv.adv_06_cte_shadow": {
+      "resource_type": "model",
+      "name": "adv_06_cte_shadow",
+      "raw_code": "-- The CTE is literally named stg_b. Inside the final select, \"stg_b\" must resolve to the\n-- CTE (which reads stg_a), NOT the real stg_b model. A naive resolver wrongly links stg_b.\nwith stg_b as (\n    select id, user_id, amount\n    from {{ ref('stg_a') }}\n)\nselect\n    id,\n    user_id,\n    amount\nfrom stg_b\n",
+      "compiled_code": "-- The CTE is literally named stg_b. Inside the final select, \"stg_b\" must resolve to the\n-- CTE (which reads stg_a), NOT the real stg_b model. A naive resolver wrongly links stg_b.\nwith stg_b as (\n    select id, user_id, amount\n    from stg_a\n)\nselect\n    id,\n    user_id,\n    amount\nfrom stg_b\n",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a"
+        ]
+      },
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "user_id": {
+          "name": "user_id"
+        },
+        "amount": {
+          "name": "amount"
+        }
+      }
+    },
+    "model.adv.adv_07_cte_reuse": {
+      "resource_type": "model",
+      "name": "adv_07_cte_reuse",
+      "raw_code": "with base as (\n    select user_id, amount from {{ ref('stg_a') }}\n),\nagg as (\n    select user_id, sum(amount) as total_amount from base group by user_id\n)\nselect\n    b.user_id,\n    b.amount,\n    a.total_amount\nfrom base b            -- base used a second time here\njoin agg a on b.user_id = a.user_id\n",
+      "compiled_code": "with base as (\n    select user_id, amount from stg_a\n),\nagg as (\n    select user_id, sum(amount) as total_amount from base group by user_id\n)\nselect\n    b.user_id,\n    b.amount,\n    a.total_amount\nfrom base b            -- base used a second time here\njoin agg a on b.user_id = a.user_id\n",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a"
+        ]
+      },
+      "columns": {
+        "user_id": {
+          "name": "user_id"
+        },
+        "amount": {
+          "name": "amount"
+        },
+        "total_amount": {
+          "name": "total_amount"
+        }
+      }
+    },
+    "model.adv.adv_08_scalar_subquery": {
+      "resource_type": "model",
+      "name": "adv_08_scalar_subquery",
+      "raw_code": "-- max_user_amount derives from stg_a.amount via a correlated scalar subquery.\nselect\n    u.user_id,\n    u.email,\n    (select max(a.amount)\n       from {{ ref('stg_a') }} a\n      where a.user_id = u.user_id) as max_user_amount\nfrom {{ ref('stg_users') }} u\n",
+      "compiled_code": "-- max_user_amount derives from stg_a.amount via a correlated scalar subquery.\nselect\n    u.user_id,\n    u.email,\n    (select max(a.amount)\n       from stg_a a\n      where a.user_id = u.user_id) as max_user_amount\nfrom stg_users u\n",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a",
+          "model.adv.stg_users"
+        ]
+      },
+      "columns": {
+        "user_id": {
+          "name": "user_id"
+        },
+        "email": {
+          "name": "email"
+        },
+        "max_user_amount": {
+          "name": "max_user_amount"
+        }
+      }
+    },
+    "model.adv.adv_09_derived_table": {
+      "resource_type": "model",
+      "name": "adv_09_derived_table",
+      "raw_code": "select\n    sub.user_id,\n    sub.amt_doubled\nfrom (\n    select user_id, amount * 2 as amt_doubled\n    from {{ ref('stg_a') }}\n) sub\nwhere sub.amt_doubled > 100\n",
+      "compiled_code": "select\n    sub.user_id,\n    sub.amt_doubled\nfrom (\n    select user_id, amount * 2 as amt_doubled\n    from stg_a\n) sub\nwhere sub.amt_doubled > 100\n",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a"
+        ]
+      },
+      "columns": {
+        "user_id": {
+          "name": "user_id"
+        },
+        "amt_doubled": {
+          "name": "amt_doubled"
+        }
+      }
+    },
+    "model.adv.adv_10_fanout_expr": {
+      "resource_type": "model",
+      "name": "adv_10_fanout_expr",
+      "raw_code": "-- amount feeds BOTH net and tax_portion (one input -> two outputs).\n-- combined feeds from amount AND status (two inputs -> one output via case).\nselect\n    user_id,\n    amount - 5            as net,\n    amount * 0.1          as tax_portion,\n    case when status = 'active' then amount else 0 end as combined\nfrom {{ ref('stg_a') }}\n",
+      "compiled_code": "-- amount feeds BOTH net and tax_portion (one input -> two outputs).\n-- combined feeds from amount AND status (two inputs -> one output via case).\nselect\n    user_id,\n    amount - 5            as net,\n    amount * 0.1          as tax_portion,\n    case when status = 'active' then amount else 0 end as combined\nfrom stg_a\n",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a"
+        ]
+      },
+      "columns": {
+        "user_id": {
+          "name": "user_id"
+        },
+        "net": {
+          "name": "net"
+        },
+        "tax_portion": {
+          "name": "tax_portion"
+        },
+        "combined": {
+          "name": "combined"
+        }
+      }
+    },
+    "model.adv.adv_11_window": {
+      "resource_type": "model",
+      "name": "adv_11_window",
+      "raw_code": "-- row_num derives from user_id (partition) + created_at (order).\n-- running_total derives from amount + user_id + created_at.\nselect\n    id,\n    user_id,\n    row_number() over (partition by user_id order by created_at) as row_num,\n    sum(amount) over (partition by user_id order by created_at) as running_total\nfrom {{ ref('stg_a') }}\n",
+      "compiled_code": "-- row_num derives from user_id (partition) + created_at (order).\n-- running_total derives from amount + user_id + created_at.\nselect\n    id,\n    user_id,\n    row_number() over (partition by user_id order by created_at) as row_num,\n    sum(amount) over (partition by user_id order by created_at) as running_total\nfrom stg_a\n",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a"
+        ]
+      },
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "user_id": {
+          "name": "user_id"
+        },
+        "row_num": {
+          "name": "row_num"
+        },
+        "running_total": {
+          "name": "running_total"
+        }
+      }
+    },
+    "model.adv.adv_12_quoted_idents": {
+      "resource_type": "model",
+      "name": "adv_12_quoted_idents",
+      "raw_code": "-- Output uses quoted mixed-case aliases; \"User Id\" maps to stg_a.user_id.\nselect\n    user_id    as \"User Id\",\n    amount     as \"Amount USD\",\n    status     as \"Status\"\nfrom {{ ref('stg_a') }}\n",
+      "compiled_code": "-- Output uses quoted mixed-case aliases; \"User Id\" maps to stg_a.user_id.\nselect\n    user_id    as \"User Id\",\n    amount     as \"Amount USD\",\n    status     as \"Status\"\nfrom stg_a\n",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a"
+        ]
+      },
+      "columns": {
+        "user id": {
+          "name": "user id"
+        },
+        "amount usd": {
+          "name": "amount usd"
+        },
+        "status": {
+          "name": "status"
+        }
+      }
+    },
+    "model.adv.adv_13_rename_chain": {
+      "resource_type": "model",
+      "name": "adv_13_rename_chain",
+      "raw_code": "-- amount -> gross (here). A downstream model then reads gross. Tests chained renames.\nselect\n    user_id,\n    amount as gross,\n    status as state\nfrom {{ ref('stg_a') }}\n",
+      "compiled_code": "-- amount -> gross (here). A downstream model then reads gross. Tests chained renames.\nselect\n    user_id,\n    amount as gross,\n    status as state\nfrom stg_a\n",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a"
+        ]
+      },
+      "columns": {
+        "user_id": {
+          "name": "user_id"
+        },
+        "gross": {
+          "name": "gross"
+        },
+        "state": {
+          "name": "state"
+        }
+      }
+    },
+    "model.adv.adv_14_rename_chain_downstream": {
+      "resource_type": "model",
+      "name": "adv_14_rename_chain_downstream",
+      "raw_code": "-- net_gross traces back through adv_13.gross -> stg_a.amount.\nselect\n    user_id,\n    gross as net_gross,\n    state\nfrom {{ ref('adv_13_rename_chain') }}\nwhere state = 'active'\n",
+      "compiled_code": "-- net_gross traces back through adv_13.gross -> stg_a.amount.\nselect\n    user_id,\n    gross as net_gross,\n    state\nfrom adv_13_rename_chain\nwhere state = 'active'\n",
+      "depends_on": {
+        "nodes": [
+          "model.adv.adv_13_rename_chain"
+        ]
+      },
+      "columns": {
+        "user_id": {
+          "name": "user_id"
+        },
+        "net_gross": {
+          "name": "net_gross"
+        },
+        "state": {
+          "name": "state"
+        }
+      }
+    },
+    "model.adv.adv_15_dead_column": {
+      "resource_type": "model",
+      "name": "adv_15_dead_column",
+      "raw_code": "-- region is pulled into the CTE but never selected downstream.\n-- A correct column-lineage graph should show region as NOT contributing to any output.\nwith enriched as (\n    select id, user_id, amount, region\n    from {{ ref('stg_b') }}\n)\nselect\n    id,\n    user_id,\n    amount\nfrom enriched\n",
+      "compiled_code": "-- region is pulled into the CTE but never selected downstream.\n-- A correct column-lineage graph should show region as NOT contributing to any output.\nwith enriched as (\n    select id, user_id, amount, region\n    from stg_b\n)\nselect\n    id,\n    user_id,\n    amount\nfrom enriched\n",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_b"
+        ]
+      },
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "user_id": {
+          "name": "user_id"
+        },
+        "amount": {
+          "name": "amount"
+        }
+      }
+    }
+  },
+  "parent_map": {
+    "source.adv.raw.table_a": [],
+    "source.adv.raw.table_b": [],
+    "source.adv.raw.users": [],
+    "model.adv.stg_a": [
+      "source.adv.raw.table_a"
+    ],
+    "model.adv.stg_b": [
+      "source.adv.raw.table_b"
+    ],
+    "model.adv.stg_users": [
+      "source.adv.raw.users"
+    ],
+    "model.adv.adv_01_select_star": [
+      "model.adv.stg_a"
+    ],
+    "model.adv.adv_02_qualified_star": [
+      "model.adv.stg_a",
+      "model.adv.stg_users"
+    ],
+    "model.adv.adv_03_union": [
+      "model.adv.stg_a",
+      "model.adv.stg_b"
+    ],
+    "model.adv.adv_04_ambiguous_column": [
+      "model.adv.stg_a",
+      "model.adv.stg_b"
+    ],
+    "model.adv.adv_05_self_join": [
+      "model.adv.stg_a",
+      "model.adv.stg_a"
+    ],
+    "model.adv.adv_06_cte_shadow": [
+      "model.adv.stg_a"
+    ],
+    "model.adv.adv_07_cte_reuse": [
+      "model.adv.stg_a"
+    ],
+    "model.adv.adv_08_scalar_subquery": [
+      "model.adv.stg_a",
+      "model.adv.stg_users"
+    ],
+    "model.adv.adv_09_derived_table": [
+      "model.adv.stg_a"
+    ],
+    "model.adv.adv_10_fanout_expr": [
+      "model.adv.stg_a"
+    ],
+    "model.adv.adv_11_window": [
+      "model.adv.stg_a"
+    ],
+    "model.adv.adv_12_quoted_idents": [
+      "model.adv.stg_a"
+    ],
+    "model.adv.adv_13_rename_chain": [
+      "model.adv.stg_a"
+    ],
+    "model.adv.adv_14_rename_chain_downstream": [
+      "model.adv.adv_13_rename_chain"
+    ],
+    "model.adv.adv_15_dead_column": [
+      "model.adv.stg_b"
+    ]
+  },
+  "child_map": {
+    "source.adv.raw.table_a": [
+      "model.adv.stg_a"
+    ],
+    "source.adv.raw.table_b": [
+      "model.adv.stg_b"
+    ],
+    "source.adv.raw.users": [
+      "model.adv.stg_users"
+    ],
+    "model.adv.stg_a": [
+      "model.adv.adv_01_select_star",
+      "model.adv.adv_02_qualified_star",
+      "model.adv.adv_03_union",
+      "model.adv.adv_04_ambiguous_column",
+      "model.adv.adv_05_self_join",
+      "model.adv.adv_05_self_join",
+      "model.adv.adv_06_cte_shadow",
+      "model.adv.adv_07_cte_reuse",
+      "model.adv.adv_08_scalar_subquery",
+      "model.adv.adv_09_derived_table",
+      "model.adv.adv_10_fanout_expr",
+      "model.adv.adv_11_window",
+      "model.adv.adv_12_quoted_idents",
+      "model.adv.adv_13_rename_chain"
+    ],
+    "model.adv.stg_b": [
+      "model.adv.adv_03_union",
+      "model.adv.adv_04_ambiguous_column",
+      "model.adv.adv_15_dead_column"
+    ],
+    "model.adv.stg_users": [
+      "model.adv.adv_02_qualified_star",
+      "model.adv.adv_08_scalar_subquery"
+    ],
+    "model.adv.adv_01_select_star": [],
+    "model.adv.adv_02_qualified_star": [],
+    "model.adv.adv_03_union": [],
+    "model.adv.adv_04_ambiguous_column": [],
+    "model.adv.adv_05_self_join": [],
+    "model.adv.adv_06_cte_shadow": [],
+    "model.adv.adv_07_cte_reuse": [],
+    "model.adv.adv_08_scalar_subquery": [],
+    "model.adv.adv_09_derived_table": [],
+    "model.adv.adv_10_fanout_expr": [],
+    "model.adv.adv_11_window": [],
+    "model.adv.adv_12_quoted_idents": [],
+    "model.adv.adv_13_rename_chain": [
+      "model.adv.adv_14_rename_chain_downstream"
+    ],
+    "model.adv.adv_14_rename_chain_downstream": [],
+    "model.adv.adv_15_dead_column": []
+  },
+  "metadata": {
+    "project_name": "enterprise_adversarial_manifest"
+  }
+}

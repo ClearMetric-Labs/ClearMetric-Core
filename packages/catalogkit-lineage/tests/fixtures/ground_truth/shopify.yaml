@@ -1,36 +1,21 @@
 project_path: ../projects/shopify/manifest.json
 dialect: postgres
 probes:
-  # Verified against the curated compiled slice and current reverse traversal after
-  # local relation rewrite. Only exact, non-ambiguous probes are committed here.
-  - selection: shopify__customers.customer_id
-    expected_upstream:
-      - column:shopify__customer_metafields.customer_id
-      - column:stg_shopify__customer.customer_id
-    expected_downstream: []
-    expected_warnings:
-      - code: select_star
-        dataset: shopify__customers
-  - selection: stg_shopify__order.order_id
-    expected_upstream: []
-    expected_downstream:
-      - column:shopify__customers.lifetime_count_orders
-      - column:shopify__customers__order_aggregates.lifetime_count_orders
-    expected_warnings:
-      - code: select_star
-        dataset: stg_shopify__order
-      - code: unresolved_lineage
-        dataset: stg_shopify__order
-        subject_id: column:stg_shopify__order.order_id
-      - code: unresolved_star_source
-        dataset: stg_shopify__order
-        subject_id: column:stg_shopify__order.order_id
-  - selection: shopify__customers.lifetime_total_spent
-    expected_upstream:
-      - column:shopify__transactions.currency_exchange_calculated_amount
-      - column:stg_shopify__transaction.amount
-      - column:stg_shopify__transaction.receipt
-    expected_downstream: []
-    expected_warnings:
-      - code: select_star
-        dataset: shopify__customers
+- selection: shopify__customers.customer_id
+  expected_upstream: []
+  expected_downstream: []
+  expected_warnings:
+  - code: select_star
+    dataset: shopify__customers
+- selection: stg_shopify__order.order_id
+  expected_upstream: []
+  expected_downstream: []
+  expected_warnings:
+  - code: select_star
+    dataset: stg_shopify__order
+- selection: shopify__customers.lifetime_total_spent
+  expected_upstream: []
+  expected_downstream: []
+  expected_warnings:
+  - code: select_star
+    dataset: shopify__customers

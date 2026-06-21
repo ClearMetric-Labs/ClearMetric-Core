@@ -1,0 +1,121 @@
+# HAND-AUTHORED ORACLE — do not edit to match engine output or expected.yaml.
+# Change only when a human re-derives value lineage from compiled SQL.
+#
+# Independent value-lineage expectation, hand-derived from SQL.
+#
+# AUTHORITY: This file is written by reading each model's SQL by eye, under
+# CatalogKit's STATED value-lineage contract — NOT by reading the engine's output.
+#
+# CONTRACT RULES APPLIED (value-lineage, not reference-lineage):
+#   R1  An edge exists iff a source column's VALUE flows into an output value.
+#   R2  Columns used ONLY as predicates (WHERE) produce NO edge.
+#   R3  Columns used ONLY as JOIN-ON keys produce NO edge.
+#   R4  Columns used ONLY as PARTITION BY / ORDER BY controls produce NO edge.
+#   R5  Literals produce NO edge.
+#   R6  SELECT *  -> engine WARNS (select_star); columns not enumerated as edges.
+#   R7  UNION branches -> engine WARNS (unresolved_lineage); no merged edges.
+#   R8  Quoted/normalization-flagged outputs -> may WARN; edge counted only if
+#       the contract claims the value resolves. adv_12's three outputs are flagged
+#       unresolved -> 0 edges here.
+#
+# edges_corrected: per-model derives_from count under strict value-lineage.
+# derives_from: optional auditable upstream map for spot checks.
+
+version: 1
+contract: value-lineage
+
+models:
+
+  adv_01_select_star:
+    edges: 0
+    edges_corrected: 0
+    warns: [select_star]
+    derivation: >
+      `select *` is not enumerated into per-column edges under R6; engine warns
+      select_star. `where status='active'` is a predicate (R2) -> no edge.
+
+  adv_02_qualified_star:
+    edges: 1
+    edges_corrected: 1
+    warns: [select_star]
+    derivation: >
+      `a.*` triggers select_star (R6) -> stg_a columns are NOT enumerated as
+      edges. The one EXPLICIT projection is `u.email` -> 1 edge.
+
+  adv_03_union:
+    edges: 0
+    edges_corrected: 0
+    warns: [unresolved_lineage]
+    derivation: >
+      UNION ALL branches cannot be safely merged under the value contract (R7)
+      -> engine warns unresolved_lineage rather than inventing positional edges.
+
+  adv_04_ambiguous_column:
+    edges_corrected: 7
+    warns: []
+    derivation: >
+      user_id/amount/status unqualified in both stg_a and stg_b -> 2 edges each;
+      created_at unambiguous in stg_a -> 1 edge.
+
+  adv_05_self_join:
+    edges_corrected: 4
+    warns: []
+
+  adv_06_cte_shadow:
+    edges_corrected: 3
+    warns: []
+
+  adv_07_cte_reuse:
+    edges_corrected: 3
+    warns: []
+
+  adv_08_scalar_subquery:
+    edges_corrected: 3
+    warns: []
+
+  adv_09_derived_table:
+    edges_corrected: 2
+    warns: []
+
+  adv_10_fanout_expr:
+    edges_corrected: 4
+    warns: []
+
+  adv_11_window:
+    edges_corrected: 3
+    warns: [unresolved_lineage, unresolved_output_source]
+    derivation: >
+      id and user_id are direct pass-throughs. running_total value comes from
+      amount only (R4 excludes partition/order controls). row_num has no value
+      argument -> unresolved_output_source, not a value edge.
+
+  adv_12_quoted_idents:
+    edges: 0
+    edges_corrected: 0
+    warns: [unresolved_lineage, unresolved_lineage, unresolved_lineage]
+    derivation: >
+      Quoted output aliases decline exact value-lineage under R8 -> 0 edges.
+
+  adv_13_rename_chain:
+    edges_corrected: 3
+    warns: []
+
+  adv_14_rename_chain_downstream:
+    edges_corrected: 3
+    warns: []
+
+  adv_15_dead_column:
+    edges_corrected: 3
+    warns: []
+
+  stg_a:
+    edges_corrected: 5
+    warns: []
+
+  stg_b:
+    edges_corrected: 5
+    warns: []
+
+  stg_users:
+    edges_corrected: 4
+    warns: []

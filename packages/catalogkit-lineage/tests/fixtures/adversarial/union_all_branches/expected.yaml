@@ -3,6 +3,5 @@ mode: exact_edges
 derives_from:
   - [column:a.amount, column:raw_a.amount]
   - [column:b.amount, column:raw_b.amount]
-  - [column:report.total_amount, column:a.amount]
-  - [column:report.total_amount, column:b.amount]
-warnings: []
+warnings:
+  - {code: unresolved_lineage, dataset: report}

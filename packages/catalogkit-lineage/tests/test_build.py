@@ -7,7 +7,6 @@ from catalogkit.lineage import (
     build_lineage_map,
     build_openlineage_export,
     trace_downstream,
-    trace_upstream,
 )
 
 
@@ -39,14 +38,14 @@ def test_folder_input_builds_successfully():
 
 
 def test_openlineage_export_contains_column_lineage_entries():
-    manifest_path = _example_root() / "manifest.json"
+    compiled_dir = _folder_example_root()
 
-    payload = build_openlineage_export(manifest_path, dialect="postgres")
+    payload = build_openlineage_export(compiled_dir, dialect="postgres")
 
-    assert payload["job"]["name"] == "jaffle_shop"
-    assert any(entry["name"] == "customers" for entry in payload["datasets"])
+    assert payload["job"]["name"] == "sql_folder"
+    assert any(entry["name"] == "orders_base" for entry in payload["datasets"])
     assert any(
-        entry["dataset"] == "customers" and entry["column"] == "customer_lifetime_value"
+        entry["dataset"] == "orders_base" and entry["column"] == "amount"
         for entry in payload["columnLineage"]
     )
 
@@ -79,34 +78,21 @@ def test_openlineage_export_groups_multiple_inputs_per_output_column(tmp_path: P
     ]
 
 
-def test_jaffle_case_amount_columns_exclude_payment_method_predicate():
+def test_jaffle_star_models_suppress_column_lineage():
     manifest_path = _example_root() / "manifest.json"
 
-    credit_card_upstream = trace_upstream(
-        manifest_path,
-        dialect="postgres",
-        selection="orders.credit_card_amount",
-    )
-    amount_upstream = trace_upstream(
-        manifest_path,
-        dialect="postgres",
-        selection="orders.amount",
-    )
+    lineage_map = build_lineage_map(manifest_path, dialect="postgres")
+
+    assert not any(edge.kind == "derives_from" for edge in lineage_map.edges)
+    assert any(warning.code == "select_star" for warning in lineage_map.warnings)
+
     payment_method_downstream = trace_downstream(
         manifest_path,
         dialect="postgres",
         selection="raw_payments.payment_method",
     )
 
-    assert "column:raw_payments.amount" in credit_card_upstream.related_ids
-    assert not any(
-        "payment_method" in related_id
-        for related_id in credit_card_upstream.related_ids
-    )
-    assert "column:raw_payments.amount" in amount_upstream.related_ids
-    assert payment_method_downstream.related_ids == [
-        "column:stg_payments.payment_method"
-    ]
+    assert payment_method_downstream.related_ids == []
 
 
 def test_openlineage_export_accepts_prebuilt_artifact():

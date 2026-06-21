@@ -1,7 +1,7 @@
 jaffle_shop:
   total: 38
-  resolved: 27
-  flagged: 0
+  resolved: 0
+  flagged: 27
   source_leaf: 11
   silent: 0
   bogus_source_leaves: 0
@@ -9,8 +9,8 @@ jaffle_shop:
     select_star: 5
 loom_finance:
   total: 10
-  resolved: 4
-  flagged: 0
+  resolved: 0
+  flagged: 4
   source_leaf: 6
   silent: 0
   bogus_source_leaves: 0
@@ -18,8 +18,8 @@ loom_finance:
     select_star: 1
 loom_marketing:
   total: 11
-  resolved: 4
-  flagged: 0
+  resolved: 0
+  flagged: 4
   source_leaf: 7
   silent: 0
   bogus_source_leaves: 0
@@ -27,16 +27,15 @@ loom_marketing:
     select_star: 1
 shopify:
   total: 436
-  resolved: 138
-  flagged: 298
+  resolved: 0
+  flagged: 436
   source_leaf: 0
   silent: 0
   bogus_source_leaves: 0
   warning_counts:
     select_star: 30
-    unresolved_lineage: 298
-    unresolved_output_source: 44
-    unresolved_star_source: 264
+    unresolved_lineage: 2
+    unresolved_star_source: 12
 sql_folder:
   total: 7
   resolved: 7

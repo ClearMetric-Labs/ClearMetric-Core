@@ -1,0 +1,356 @@
+{
+  "nodes": {
+    "source.adv.raw.table_a": {
+      "resource_type": "source",
+      "name": "table_a",
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "user_id": {
+          "name": "user_id"
+        },
+        "amount": {
+          "name": "amount"
+        },
+        "status": {
+          "name": "status"
+        },
+        "created_at": {
+          "name": "created_at"
+        }
+      }
+    },
+    "source.adv.raw.table_b": {
+      "resource_type": "source",
+      "name": "table_b",
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "user_id": {
+          "name": "user_id"
+        },
+        "amount": {
+          "name": "amount"
+        },
+        "status": {
+          "name": "status"
+        },
+        "region": {
+          "name": "region"
+        }
+      }
+    },
+    "model.adv.stg_a": {
+      "resource_type": "model",
+      "name": "stg_a",
+      "compiled_code": "select id, user_id, amount, status, created_at from table_a",
+      "depends_on": {
+        "nodes": [
+          "source.adv.raw.table_a"
+        ]
+      },
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "user_id": {
+          "name": "user_id"
+        },
+        "amount": {
+          "name": "amount"
+        },
+        "status": {
+          "name": "status"
+        },
+        "created_at": {
+          "name": "created_at"
+        }
+      }
+    },
+    "model.adv.stg_b": {
+      "resource_type": "model",
+      "name": "stg_b",
+      "compiled_code": "select id, user_id, amount, status, region from table_b",
+      "depends_on": {
+        "nodes": [
+          "source.adv.raw.table_b"
+        ]
+      },
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "user_id": {
+          "name": "user_id"
+        },
+        "amount": {
+          "name": "amount"
+        },
+        "status": {
+          "name": "status"
+        },
+        "region": {
+          "name": "region"
+        }
+      }
+    },
+    "model.adv.var_union_a_diff_count": {
+      "resource_type": "model",
+      "name": "var_union_a_diff_count",
+      "compiled_code": "select id, amount from stg_a\nunion all\nselect id, amount from stg_b",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a",
+          "model.adv.stg_b"
+        ]
+      },
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "amount": {
+          "name": "amount"
+        }
+      }
+    },
+    "model.adv.var_union_b_plain_union": {
+      "resource_type": "model",
+      "name": "var_union_b_plain_union",
+      "compiled_code": "select 'x' as tag, id, amount from stg_a\nunion\nselect 'y' as tag, id, amount from stg_b",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a",
+          "model.adv.stg_b"
+        ]
+      },
+      "columns": {
+        "tag": {
+          "name": "tag"
+        },
+        "id": {
+          "name": "id"
+        },
+        "amount": {
+          "name": "amount"
+        }
+      }
+    },
+    "model.adv.var_union_c_three_branch": {
+      "resource_type": "model",
+      "name": "var_union_c_three_branch",
+      "compiled_code": "select id, amount from stg_a\nunion all\nselect id, amount from stg_b\nunion all\nselect id, amount from stg_a",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a",
+          "model.adv.stg_b"
+        ]
+      },
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "amount": {
+          "name": "amount"
+        }
+      }
+    },
+    "model.adv.var_window_a_no_order": {
+      "resource_type": "model",
+      "name": "var_window_a_no_order",
+      "compiled_code": "select id, count(*) over (partition by user_id) as cnt from stg_a",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a"
+        ]
+      },
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "cnt": {
+          "name": "cnt"
+        }
+      }
+    },
+    "model.adv.var_window_b_named_window": {
+      "resource_type": "model",
+      "name": "var_window_b_named_window",
+      "compiled_code": "select id, row_number() over w as row_num, sum(amount) over w as running_total from stg_a window w as (partition by user_id order by created_at)",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a"
+        ]
+      },
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "row_num": {
+          "name": "row_num"
+        },
+        "running_total": {
+          "name": "running_total"
+        }
+      }
+    },
+    "model.adv.var_window_c_lag": {
+      "resource_type": "model",
+      "name": "var_window_c_lag",
+      "compiled_code": "select id, row_number() over (partition by user_id order by created_at) as row_num from stg_a",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a"
+        ]
+      },
+      "columns": {
+        "id": {
+          "name": "id"
+        },
+        "row_num": {
+          "name": "row_num"
+        }
+      }
+    },
+    "model.adv.var_quoted_a_simple_alias": {
+      "resource_type": "model",
+      "name": "var_quoted_a_simple_alias",
+      "compiled_code": "select user_id as user_id_out, amount as amount_out, status as status_out from stg_a",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a"
+        ]
+      },
+      "columns": {
+        "user_id_out": {
+          "name": "user_id_out"
+        },
+        "amount_out": {
+          "name": "amount_out"
+        },
+        "status_out": {
+          "name": "status_out"
+        }
+      }
+    },
+    "model.adv.var_quoted_b_quoted_lower": {
+      "resource_type": "model",
+      "name": "var_quoted_b_quoted_lower",
+      "compiled_code": "select user_id as \"user_id_out\", amount as \"amount_out\", status as \"status_out\" from stg_a",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a"
+        ]
+      },
+      "columns": {
+        "user_id_out": {
+          "name": "user_id_out"
+        },
+        "amount_out": {
+          "name": "amount_out"
+        },
+        "status_out": {
+          "name": "status_out"
+        }
+      }
+    },
+    "model.adv.var_quoted_c_quoted_source_col": {
+      "resource_type": "model",
+      "name": "var_quoted_c_quoted_source_col",
+      "compiled_code": "select \"user_id\" as user_id_out, \"amount\" as amount_out, \"status\" as status_out from stg_a",
+      "depends_on": {
+        "nodes": [
+          "model.adv.stg_a"
+        ]
+      },
+      "columns": {
+        "user_id_out": {
+          "name": "user_id_out"
+        },
+        "amount_out": {
+          "name": "amount_out"
+        },
+        "status_out": {
+          "name": "status_out"
+        }
+      }
+    }
+  },
+  "parent_map": {
+    "source.adv.raw.table_a": [],
+    "source.adv.raw.table_b": [],
+    "model.adv.stg_a": [
+      "source.adv.raw.table_a"
+    ],
+    "model.adv.stg_b": [
+      "source.adv.raw.table_b"
+    ],
+    "model.adv.var_union_a_diff_count": [
+      "model.adv.stg_a",
+      "model.adv.stg_b"
+    ],
+    "model.adv.var_union_b_plain_union": [
+      "model.adv.stg_a",
+      "model.adv.stg_b"
+    ],
+    "model.adv.var_union_c_three_branch": [
+      "model.adv.stg_a",
+      "model.adv.stg_b"
+    ],
+    "model.adv.var_window_a_no_order": [
+      "model.adv.stg_a"
+    ],
+    "model.adv.var_window_b_named_window": [
+      "model.adv.stg_a"
+    ],
+    "model.adv.var_window_c_lag": [
+      "model.adv.stg_a"
+    ],
+    "model.adv.var_quoted_a_simple_alias": [
+      "model.adv.stg_a"
+    ],
+    "model.adv.var_quoted_b_quoted_lower": [
+      "model.adv.stg_a"
+    ],
+    "model.adv.var_quoted_c_quoted_source_col": [
+      "model.adv.stg_a"
+    ]
+  },
+  "child_map": {
+    "source.adv.raw.table_a": [
+      "model.adv.stg_a"
+    ],
+    "source.adv.raw.table_b": [
+      "model.adv.stg_b"
+    ],
+    "model.adv.stg_a": [
+      "model.adv.var_union_a_diff_count",
+      "model.adv.var_union_b_plain_union",
+      "model.adv.var_union_c_three_branch",
+      "model.adv.var_window_a_no_order",
+      "model.adv.var_window_b_named_window",
+      "model.adv.var_window_c_lag",
+      "model.adv.var_quoted_a_simple_alias",
+      "model.adv.var_quoted_b_quoted_lower",
+      "model.adv.var_quoted_c_quoted_source_col"
+    ],
+    "model.adv.stg_b": [
+      "model.adv.var_union_a_diff_count",
+      "model.adv.var_union_b_plain_union",
+      "model.adv.var_union_c_three_branch"
+    ],
+    "model.adv.var_union_a_diff_count": [],
+    "model.adv.var_union_b_plain_union": [],
+    "model.adv.var_union_c_three_branch": [],
+    "model.adv.var_window_a_no_order": [],
+    "model.adv.var_window_b_named_window": [],
+    "model.adv.var_window_c_lag": [],
+    "model.adv.var_quoted_a_simple_alias": [],
+    "model.adv.var_quoted_b_quoted_lower": [],
+    "model.adv.var_quoted_c_quoted_source_col": []
+  },
+  "metadata": {
+    "project_name": "enterprise_warning_variants"
+  }
+}

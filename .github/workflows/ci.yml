@@ -130,6 +130,8 @@ jobs:
           python -m pytest -v \
             packages/catalogkit-lineage/tests/test_corpus_invariants.py \
             packages/catalogkit-lineage/tests/test_ground_truth.py \
+            packages/catalogkit-lineage/tests/test_value_lineage_oracle.py \
+            packages/catalogkit-lineage/tests/test_variant_warning_categories.py \
             tests/test_cross_package_artifacts.py::test_lineage_and_query_artifacts_merge_on_shared_ids
           PYTHONPATH=packages/catalogkit-lineage \
             python packages/catalogkit-lineage/scripts/sweep_lineage_coverage.py

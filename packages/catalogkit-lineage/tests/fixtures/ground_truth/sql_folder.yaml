@@ -1,17 +1,17 @@
 project_path: ../projects/sql_folder
 dialect: postgres
 probes:
-  - selection: orders_base.amount
-    expected_upstream:
-      - column:raw_orders.amount
-    expected_downstream:
-      - column:customer_totals.total_amount
-      - column:customers_report.customer_lifetime_value
-    expected_warnings: []
-  - selection: customers_report.customer_lifetime_value
-    expected_upstream:
-      - column:customer_totals.total_amount
-      - column:orders_base.amount
-      - column:raw_orders.amount
-    expected_downstream: []
-    expected_warnings: []
+- selection: orders_base.amount
+  expected_upstream:
+  - column:raw_orders.amount
+  expected_downstream:
+  - column:customer_totals.total_amount
+  - column:customers_report.customer_lifetime_value
+  expected_warnings: []
+- selection: customers_report.customer_lifetime_value
+  expected_upstream:
+  - column:customer_totals.total_amount
+  - column:orders_base.amount
+  - column:raw_orders.amount
+  expected_downstream: []
+  expected_warnings: []

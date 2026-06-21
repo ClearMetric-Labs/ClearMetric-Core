@@ -2,14 +2,41 @@
 
 from __future__ import annotations
 
-from typing import Any
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Iterator
 
 import sqlglot
-from catalogkit.core import normalize_identifier, normalize_identifier_part
+from catalogkit.core import (
+    CanonicalIdError,
+    normalize_identifier,
+    normalize_identifier_part,
+)
 from sqlglot import exp
 from sqlglot.lineage import Node as SqlglotLineageNode
 
 from .errors import LineageContractError, LineageInputError
+
+if TYPE_CHECKING:
+    from .loaders import ProjectInput
+
+
+@dataclass(frozen=True)
+class SqlStatementAnalysis:
+    """Single-parse SQL statement context shared by lineage edge resolution."""
+
+    statement: Any
+    alias_map: dict[str, str]
+    cte_names: set[str]
+    table_references: tuple[str, ...]
+    has_union: bool
+
+
+@dataclass(frozen=True)
+class StarExpansionPolicy:
+    """Which output columns are expanded from star projections under strict R6."""
+
+    suppress_all_outputs: bool
+    suppressed_output_names: frozenset[str]
 
 
 def parse_single_statement(sql: str, *, dialect: str) -> Any:
@@ -38,9 +65,171 @@ def parse_single_statement(sql: str, *, dialect: str) -> Any:
     return statements[0]
 
 
+def analyze_sql_statement(sql: str, *, dialect: str) -> SqlStatementAnalysis:
+    """Parse one SQL statement once and derive shared relation metadata."""
+    statement = parse_single_statement(sql, dialect=dialect)
+    return SqlStatementAnalysis(
+        statement=statement,
+        alias_map=_relation_alias_map(statement),
+        cte_names=_cte_names(statement),
+        table_references=_table_references(statement, dialect=dialect),
+        has_union=statement.find(exp.Union) is not None,
+    )
+
+
+def has_select_star_projection(analysis: SqlStatementAnalysis) -> bool:
+    """Return True when the outer SELECT list projects bare or qualified stars."""
+    return any(_select_star_projections(analysis.statement))
+
+
+def star_expansion_policy(
+    analysis: SqlStatementAnalysis,
+    *,
+    project: ProjectInput,
+) -> StarExpansionPolicy | None:
+    """Return output suppression policy for select-star strict value-lineage (R6)."""
+    has_bare_star = False
+    qualified_star_aliases: list[str] = []
+
+    for inner, qualified_alias in _select_star_projections(analysis.statement):
+        if isinstance(inner, exp.Star) and inner.args.get("table") is None:
+            has_bare_star = True
+        elif qualified_alias is not None:
+            qualified_star_aliases.append(qualified_alias)
+
+    if has_bare_star:
+        return StarExpansionPolicy(
+            suppress_all_outputs=True,
+            suppressed_output_names=frozenset(),
+        )
+
+    if not qualified_star_aliases:
+        return None
+
+    suppressed: set[str] = set()
+    for alias in qualified_star_aliases:
+        suppressed.update(
+            _declared_columns_for_relation(
+                alias,
+                project=project,
+                alias_map=analysis.alias_map,
+            )
+        )
+    return StarExpansionPolicy(
+        suppress_all_outputs=False,
+        suppressed_output_names=frozenset(suppressed),
+    )
+
+
+def quoted_alias_output_columns(analysis: SqlStatementAnalysis) -> frozenset[str]:
+    """Return outputs where quoting prevents confident value-lineage (strict R8)."""
+    quoted: set[str] = set()
+    for select in analysis.statement.find_all(exp.Select):
+        for expression in select.expressions:
+            alias_name = expression.alias_or_name
+            if not alias_name or alias_name == "*":
+                continue
+            try:
+                normalized_alias = normalize_identifier_part(alias_name)
+            except CanonicalIdError:
+                continue
+            if isinstance(expression, exp.Alias):
+                alias_node = expression.args.get("alias")
+                if alias_node is not None and getattr(alias_node, "quoted", False):
+                    quoted.add(normalized_alias)
+                    continue
+            inner = _unwrap_alias(expression)
+            if isinstance(inner, exp.Column) and _column_identifier_is_quoted(inner):
+                quoted.add(normalized_alias)
+    return frozenset(quoted)
+
+
+def _column_identifier_is_quoted(column: exp.Column) -> bool:
+    identifier = column.this
+    return isinstance(identifier, exp.Identifier) and bool(identifier.quoted)
+
+
+def is_star_suppressed_output(
+    output_name: str,
+    policy: StarExpansionPolicy | None,
+) -> bool:
+    if policy is None:
+        return False
+    if policy.suppress_all_outputs:
+        return True
+    return normalize_identifier_part(output_name) in policy.suppressed_output_names
+
+
+def _declared_columns_for_relation(
+    relation_key: str,
+    *,
+    project: ProjectInput,
+    alias_map: dict[str, str],
+) -> set[str]:
+    resolved = alias_map.get(relation_key, relation_key)
+    for candidate in (resolved, relation_key):
+        dependency = project.datasets.get(candidate)
+        if dependency is not None and dependency.declared_columns:
+            return {
+                normalize_identifier_part(name) for name in dependency.declared_columns
+            }
+        root_schema = project.root_schema().get(candidate)
+        if root_schema:
+            return {normalize_identifier_part(name) for name in root_schema}
+    return set()
+
+
+def uses_aliased_table_star(analysis: SqlStatementAnalysis) -> bool:
+    """Return True when the statement projects alias-qualified stars such as ``t.*``."""
+    for _inner, qualified_alias in _select_star_projections(analysis.statement):
+        if qualified_alias is not None and qualified_alias in analysis.alias_map:
+            return True
+    return False
+
+
 def list_table_references(sql: str, *, dialect: str) -> list[str]:
     """Return normalized table references while excluding local CTE names."""
-    statement = parse_single_statement(sql, dialect=dialect)
+    return list(analyze_sql_statement(sql, dialect=dialect).table_references)
+
+
+def _select_star_projections(statement: Any) -> Iterator[tuple[Any, str | None]]:
+    """Yield (inner expression, qualified alias key) for each star projection in SELECT."""
+    for select in statement.find_all(exp.Select):
+        for expression in select.expressions:
+            inner = _unwrap_alias(expression)
+            if isinstance(inner, exp.Star) or (
+                isinstance(inner, exp.Column) and inner.name == "*"
+            ):
+                yield inner, _qualified_star_table_key(inner)
+
+
+def _qualified_star_table_key(inner: Any) -> str | None:
+    table = inner.args.get("table")
+    if table is None or not table.name:
+        return None
+    return normalize_identifier_part(table.name)
+
+
+def _relation_alias_map(statement: Any) -> dict[str, str]:
+    mapping: dict[str, str] = {}
+    for table in statement.find_all(exp.Table):
+        if not table.name:
+            continue
+        relation = normalize_identifier_part(table.name)
+        if table.alias:
+            mapping[normalize_identifier_part(table.alias)] = relation
+    return mapping
+
+
+def _cte_names(statement: Any) -> set[str]:
+    return {
+        normalize_identifier_part(cte.alias_or_name)
+        for cte in statement.find_all(exp.CTE)
+        if cte.alias_or_name
+    }
+
+
+def _table_references(statement: Any, *, dialect: str) -> tuple[str, ...]:
     cte_names = {
         normalize_identifier(cte.alias_or_name)
         for cte in statement.find_all(exp.CTE)
@@ -54,13 +243,7 @@ def list_table_references(sql: str, *, dialect: str) -> list[str]:
             continue
         seen.add(reference)
         references.append(reference)
-    return references
-
-
-def detect_select_star(sql: str, *, dialect: str) -> bool:
-    """Return True when the statement includes any star projection."""
-    statement = parse_single_statement(sql, dialect=dialect)
-    return any(isinstance(node, exp.Star) for node in statement.walk())
+    return tuple(references)
 
 
 def defining_value_expression(root: SqlglotLineageNode) -> Any:
