@@ -1,57 +1,69 @@
 # CatalogKit
 
-**CatalogKit** is a lightweight, modular toolkit for building data catalog and
-lineage systems.
-
-**Status:** CatalogKit is in early development (0.x). Current release: **0.1.4**.
-Pin versions for anything you depend on.
-
-Many catalog tools are expensive, platform-heavy, or more than a small team
-needs. CatalogKit takes a simpler approach: headless, deterministic primitives
-that extract structure from the SQL and analytics code you already have, then
-emit it as a clean, mergeable artifact. Install only what you need, compose the
-pieces yourself, and build the catalog or lineage layer your team actually
-wants without standing up a full platform.
-
-**Launch claim:** correct where resolvable, explicit where not, no credentials.
-Not universal dbt column lineage.
-
-Start with one query. `catalogkit-query` maps a single SQL statement into its
-relations and dependencies, so you can understand inherited SQL fast.
-
-`catalogkit-lineage` maps project-level column impact across dbt manifests or SQL
-folders for pre-merge change analysis.
-
-## How It Works
-
-CatalogKit is a Python monorepo of independently installable packages. Shared
-graph models, canonical IDs, serialization, merge semantics, and validation
-rules live in `catalogkit-core`. Each tool composes through that core and never
-depends on another tool, so independent tools can produce graphs that merge
-cleanly.
-
-## Packages
-
-- `catalogkit-core` - shared artifact models, canonical IDs, serialization,
-  merge, and validation
-- `catalogkit-query` - single-statement SQL structure mapping that preserves the
-  `QueryMap` contract
-- `catalogkit-lineage` - project-level SQL lineage for dbt manifests and SQL
-  folders
-- `catalogkit` - thin meta-package for convenience installs
-
-## Install
-
-Install individual CatalogKit modules directly when you only want a subset of
-the suite.
-
-Install the current CatalogKit module set:
+**An open-source, dev-first catalog toolkit.** CatalogKit derives lineage, dependencies, and structure from the SQL you already have — runs locally, lives in your repo, no warehouse or platform required.
 
 ```bash
-python -m pip install catalogkit
+pip install catalogkit-lineage
+catalogkit-lineage --dialect postgres --upstream orders.credit_card_amount ./manifest.json
 ```
 
-Import from the shared namespace:
+```
+upstream: orders.credit_card_amount
+  - column:orders.credit_card_amount
+    - column:stg_payments.amount
+      - column:raw_payments.amount
+```
+
+Ask any column *"what feeds this?"* or *"what breaks if I change it?"* and get a real answer, traced from your dbt project or SQL files.
+
+> **Status:** early development (0.x), release 0.1.5. Pin your versions.
+
+## Why it's different
+
+Most catalogs are heavy platforms you log into and maintain by hand, drifting out of sync with your code. CatalogKit is small, headless tools that derive your catalog *from* the code — version-controlled, composable, and built to run in CI. When it can't resolve something, it flags it instead of guessing.
+
+## Tools
+
+| Tool | What it does | |
+|------|--------------|--|
+| **`catalogkit-lineage`** | Column-level lineage and impact across a dbt project or `.sql` folder | ✅ |
+| **`catalogkit-query`** | Maps a single SQL statement into its tables and dependencies | ✅ |
+| **`catalogkit-core`** | Shared artifact format so tool outputs merge into one graph | ✅ |
+
+```bash
+pip install catalogkit          # everything
+pip install catalogkit-lineage  # just one tool
+```
+
+## Roadmap
+
+Growing toward a catalog that lives in your repo and is enforced in CI — one small tool at a time, all derived from your SQL, no new format to adopt:
+
+- ◻️ **`catalogkit-check`** — CI gate: fail a PR when a change breaks something downstream
+- ◻️ **`catalogkit-dedupe`** — find duplicate and near-duplicate models
+- ◻️ **Catalog compile** — generate a browsable catalog from your repo
+- ◻️ **Derived semantics** — surface what your SQL means, flag inconsistent metric definitions
+
+[Open an issue](https://github.com/Clearmetric-Labs/CatalogKit/issues) if there's a primitive you wish existed.
+
+## Limits
+
+Static analysis only — no warehouse connection. On star-heavy SQL (`SELECT *` without schema), it flags what it can't resolve. [Full limitations →](packages/catalogkit-lineage/docs/limitations.md)
+
+[Apache 2.0](LICENSE).
+
+---
+
+<details>
+<summary><strong>Architecture & contributing</strong></summary>
+
+CatalogKit is a Python monorepo of independently installable packages sharing the `catalogkit` namespace. Each tool composes through `catalogkit-core` and never depends on another tool, so independent outputs merge into one graph.
+
+**Packages**
+- `catalogkit-core` — shared artifact models, canonical IDs, serialization, merge, validation
+- `catalogkit-query` — single-statement SQL structure mapping (preserves the `QueryMap` contract)
+- `catalogkit-lineage` — project-level lineage for dbt manifests and SQL folders
+- `catalogkit` — thin meta-package for convenience installs
 
 ```python
 from catalogkit.core import Node, Edge, Evidence
@@ -59,71 +71,26 @@ from catalogkit.query import build_query_map
 from catalogkit.lineage import build_lineage_map
 ```
 
-## Repository Layout
-
-```text
-CatalogKit/
-  packages/
-    catalogkit-core/
-    catalogkit-query/
-    catalogkit-lineage/
-    catalogkit/
-  docs/
-  .github/workflows/
-```
-
-## Namespace Rules
-
+**Namespace rules**
 - `catalogkit` is a native PEP 420 namespace package.
-- No package in this repo may ship `catalogkit/__init__.py`.
-- The `catalogkit` meta-package provides dependency metadata only. It must not
-  provide an importable `catalogkit` Python package on disk.
+- No package may ship `catalogkit/__init__.py`.
+- The meta-package provides dependency metadata only.
 
-## Core Rules
+**Core rules**
+- `version` = shared artifact *schema* version, owned by `catalogkit-core`.
+- Canonical IDs and merge semantics defined once in `catalogkit-core`.
+- No duplicate shared models or fallback code paths.
 
-- `version` means shared artifact schema version only.
-- Artifact schema versioning is owned by `catalogkit-core`, not package versions.
-- Canonical IDs are normalized once in `catalogkit-core` and reused everywhere.
-- Artifact merge semantics are defined once in `catalogkit-core`.
-- Duplicate shared models or fallback code paths are not allowed.
-
-## Local Development
-
-Install the current packages in editable mode:
-
+**Local development**
 ```bash
 python -m pip install -e packages/catalogkit-core
 python -m pip install -e "packages/catalogkit-query[dev,release]"
 python -m pip install -e "packages/catalogkit-lineage[dev,release]"
-```
-
-Build the meta-package when you want to validate the convenience install path:
-
-```bash
-python -m build packages/catalogkit
-```
-
-Run tests:
-
-```bash
 python -m pytest -v
 ```
 
-Build a package locally:
+**Docs:** [contract](packages/catalogkit-core/docs/contract.md) · [query limits](packages/catalogkit-query/docs/limitations.md) · [lineage limits](packages/catalogkit-lineage/docs/limitations.md)
 
-```bash
-python -m build packages/catalogkit-core
-python -m build packages/catalogkit-query
-python -m build packages/catalogkit-lineage
-python -m build packages/catalogkit
-```
+Contributions require agreeing to the [CLA](CLA.md). See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Contract Docs
-
-- [`packages/catalogkit-core/docs/contract.md`](packages/catalogkit-core/docs/contract.md)
-- [`packages/catalogkit-query/docs/limitations.md`](packages/catalogkit-query/docs/limitations.md)
-- [`packages/catalogkit-lineage/docs/limitations.md`](packages/catalogkit-lineage/docs/limitations.md)
-
-## License
-
-CatalogKit is licensed under Apache 2.0. See [`LICENSE`](LICENSE).
+</details>

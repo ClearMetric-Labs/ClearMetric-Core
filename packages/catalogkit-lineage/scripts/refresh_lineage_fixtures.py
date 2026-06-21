@@ -29,6 +29,11 @@ SHOPIFY_ANCHOR_MODEL_NAMES = {
 }
 
 QUOTED_RELATION_PATTERN = re.compile(r'"[^"]+"\."[^"]+"\."([^"]+)"')
+MACRO_SOURCE_TABLE_PATTERN = re.compile(r"from\s+([a-zA-Z_][a-zA-Z0-9_]*)", re.IGNORECASE)
+FIELDS_CTE_ALIAS_PATTERN = re.compile(
+    r"as\s+\n\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:,|\n\s*\)|\n\s*,)",
+    re.MULTILINE,
+)
 JINJA_REF_PATTERN = re.compile(r"\{\{\s*ref\('([^']+)'\)\s*\}\}")
 JINJA_CROSS_PROJECT_REF_PATTERN = re.compile(
     r"\{\{\s*ref\('([^']+)'\s*,\s*'([^']+)'\)\s*\}\}"
@@ -89,6 +94,8 @@ def build_shopify_fixture() -> None:
             "depends_on": payload.get("depends_on", {"nodes": []}),
             "columns": payload.get("columns", {}),
         }
+
+    enrich_shopify_closure(selected_nodes)
 
     selected_names = {node["name"] for node in selected_nodes.values()}
     if not SHOPIFY_ANCHOR_MODEL_NAMES.issubset(selected_names):
@@ -214,7 +221,7 @@ This directory is the single canonical fixture root for `catalogkit-lineage`.
 |---|---|---|---|---|
 | `projects/jaffle_shop` | `dbt-labs/jaffle-shop-classic` | `unknown` | `postgres` | Pre-existing vendored slice moved from `examples/jaffle_shop`; contains 5 models and 3 seeds. |
 | `projects/sql_folder` | `n/a` | `n/a` | `postgres` | In-repo plain SQL fixture moved from `examples/sql_folder`; contains 3 SQL files. |
-| `projects/shopify` | `fivetran/dbt_shopify` | `a970f76a01fff8524540714f9255af8e62c3b985` | `postgres` | Transitive model closure from anchor models in published `docs/manifest.json`; compiled SQL rewritten to local relation names for static lineage tests. |
+| `projects/shopify` | `fivetran/dbt_shopify` | `a970f76a01fff8524540714f9255af8e62c3b985` | `postgres` | Transitive model closure from anchor models in published `docs/manifest.json`; compiled SQL rewritten to local relation names; macro-union source nodes and tmp-model column metadata inferred from staging `fields` CTE projections. |
 | `projects/loom_finance` | `p-munhoz/dbt-loom-multi-project-demo` | `fddd6600448f13e8b945958630a1ec0abe959bc3` | `duckdb` | Curated manifest for the finance project using the public cross-project customer dimension and local `orders` seed. |
 | `projects/loom_marketing` | `p-munhoz/dbt-loom-multi-project-demo` | `fddd6600448f13e8b945958630a1ec0abe959bc3` | `duckdb` | Curated manifest for the marketing project using the public cross-project customer dimension and local `campaign_events` seed. |
 """
@@ -326,6 +333,75 @@ def rewrite_shopify_compiled_sql(sql: str) -> str:
     if not sql.strip():
         raise SystemExit("Expected non-empty compiled_code in Shopify manifest.")
     return QUOTED_RELATION_PATTERN.sub(lambda match: match.group(1), sql).strip()
+
+
+def enrich_shopify_closure(selected_nodes: dict[str, dict[str, Any]]) -> None:
+    """Attach production-shaped schema metadata for macro sources and tmp models."""
+    models_by_name = {node["name"]: node for node in selected_nodes.values()}
+    tmp_to_staging: dict[str, str] = {}
+    for name, node in models_by_name.items():
+        if not name.endswith("_tmp"):
+            continue
+        staging_name = name.removesuffix("_tmp")
+        if staging_name in models_by_name:
+            tmp_to_staging[name] = staging_name
+
+    inferred_columns_by_tmp: dict[str, tuple[str, ...]] = {}
+    for tmp_name, staging_name in tmp_to_staging.items():
+        staging_sql = str(models_by_name[staging_name].get("compiled_code") or "")
+        columns = infer_fields_cte_columns(staging_sql)
+        if columns:
+            inferred_columns_by_tmp[tmp_name] = columns
+
+    for tmp_name, columns in inferred_columns_by_tmp.items():
+        models_by_name[tmp_name]["columns"] = columns_to_manifest(columns)
+
+    source_nodes: dict[str, dict[str, Any]] = {}
+    for node in models_by_name.values():
+        if not str(node.get("name", "")).endswith("_tmp"):
+            continue
+        tmp_sql = str(node.get("compiled_code") or "")
+        match = MACRO_SOURCE_TABLE_PATTERN.search(tmp_sql)
+        if match is None:
+            continue
+        source_name = match.group(1)
+        if source_name in models_by_name:
+            continue
+        columns = inferred_columns_by_tmp.get(node["name"], ())
+        if not columns:
+            continue
+        unique_id = f"source.shopify_slice.{source_name}"
+        source_nodes[unique_id] = source_node(source_name, columns=columns)
+
+    selected_nodes.update(source_nodes)
+
+
+def infer_fields_cte_columns(compiled_sql: str) -> tuple[str, ...]:
+    marker = "fields as ("
+    lower_sql = compiled_sql.lower()
+    start = lower_sql.find(marker)
+    if start < 0:
+        return ()
+    section = compiled_sql[start:]
+    end = section.find("\n)\n,")
+    if end < 0:
+        end = section.find("\n)\n")
+    if end < 0:
+        return ()
+    fields_section = section[:end]
+    columns = FIELDS_CTE_ALIAS_PATTERN.findall(fields_section)
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for column_name in columns:
+        if column_name in seen:
+            continue
+        seen.add(column_name)
+        deduped.append(column_name)
+    return tuple(deduped)
+
+
+def columns_to_manifest(columns: tuple[str, ...]) -> dict[str, dict[str, str]]:
+    return {column_name: {"name": column_name} for column_name in columns}
 
 
 def compile_loom_sql(sql: str) -> str:

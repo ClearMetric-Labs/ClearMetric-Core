@@ -86,7 +86,7 @@ That means:
   schema metadata to expand stars safely
 - star-heavy compiled dbt projects may remain heavily flagged rather than
   silently incomplete
-- on the committed Shopify closure, roughly 68% of columns are flagged and 0%
+- on the committed Shopify closure, roughly 0.7% of local-model columns are flagged and 0%
   are silent — flagging is honesty, not product failure
 
 The launch claim is **not** universal dbt column lineage. It is: correct where
@@ -101,7 +101,7 @@ Validation against the committed corpus shows:
 | `jaffle_shop` | 38 | 27 | 0 | 11 | 0 | Clean baseline dbt fixture. |
 | `loom_finance` | 10 | 4 | 0 | 6 | 0 | Small duckdb slice with one star warning. |
 | `loom_marketing` | 11 | 4 | 0 | 7 | 0 | Small duckdb slice with one star warning. |
-| `shopify` | 436 | 138 | 298 | 0 | 0 | Expanded 30-model closure from anchor models; warning-rich but no silent columns. |
+| `shopify` | 1006 | 714 | 7 | 285 | 0 | Production-shaped closure with macro source metadata; 0.7% flagged on local models. |
 | `sql_folder` | 7 | 7 | 0 | 0 | 0 | Plain SQL path. |
 
 Observed behavior from that sweep:

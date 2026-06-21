@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "catalogkit"
-version = "0.1.4"
+version = "0.1.5"
 description = "Convenience meta-package for installing CatalogKit modules."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -24,9 +24,9 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "catalogkit-core>=0.1.4",
-    "catalogkit-query>=0.1.4",
-    "catalogkit-lineage>=0.1.4",
+    "catalogkit-core>=0.1.5",
+    "catalogkit-query>=0.1.5",
+    "catalogkit-lineage>=0.1.5",
 ]
 
 [project.urls]

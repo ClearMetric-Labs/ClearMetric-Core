@@ -1,3 +1,3 @@
 """Package version for catalogkit-lineage."""
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
