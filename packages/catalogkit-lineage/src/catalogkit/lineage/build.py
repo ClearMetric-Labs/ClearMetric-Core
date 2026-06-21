@@ -139,6 +139,14 @@ def build_openlineage_export_from_project(
     dialect: str,
 ) -> dict[str, Any]:
     artifact = build_catalog_artifact_from_project(project, dialect=dialect)
+    return build_openlineage_export_from_artifact(artifact, job_name=project.label)
+
+
+def build_openlineage_export_from_artifact(
+    artifact: CatalogArtifact,
+    *,
+    job_name: str,
+) -> dict[str, Any]:
     input_fields_by_output: dict[tuple[str, str], set[tuple[str, str, str]]] = {}
     for edge in derives_from_edges(artifact):
         output_dataset, output_column = column_selection_from_id(edge.source_id)
@@ -180,7 +188,7 @@ def build_openlineage_export_from_project(
     return {
         "job": {
             "namespace": "catalogkit",
-            "name": project.label,
+            "name": job_name,
         },
         "datasets": datasets,
         "columnLineage": export_entries,

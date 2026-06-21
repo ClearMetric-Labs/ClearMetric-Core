@@ -10,6 +10,7 @@ from catalogkit.core import CatalogArtifact
 from .build import (
     build_catalog_artifact_from_project,
     build_lineage_map_from_project,
+    build_openlineage_export_from_artifact,
     build_openlineage_export_from_project,
     trace_downstream_from_project,
     trace_upstream_from_project,
@@ -54,9 +55,23 @@ def trace_downstream(
     return trace_downstream_from_project(project, dialect=dialect, selection=selection)
 
 
-def build_openlineage_export(path: str | Path, *, dialect: str) -> dict[str, Any]:
-    """Build an OpenLineage-compatible export view for one project input."""
-    project = load_project(path, dialect=dialect)
+def build_openlineage_export(
+    source: str | Path | CatalogArtifact,
+    *,
+    dialect: str = "",
+    job_name: str = "catalogkit",
+) -> dict[str, Any]:
+    """Build an OpenLineage-compatible export from a path or a pre-built artifact.
+
+    When ``source`` is a ``CatalogArtifact``, ``job_name`` labels the export job.
+    When ``source`` is a path, ``dialect`` is required and the job name comes
+    from the loaded project.
+    """
+    if isinstance(source, CatalogArtifact):
+        return build_openlineage_export_from_artifact(source, job_name=job_name)
+    if not dialect:
+        raise TypeError("dialect is required when source is a file path")
+    project = load_project(source, dialect=dialect)
     return build_openlineage_export_from_project(project, dialect=dialect)
 
 

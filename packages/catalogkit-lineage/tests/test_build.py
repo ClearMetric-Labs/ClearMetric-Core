@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from catalogkit.lineage import (
+    build_catalog_artifact,
     build_lineage_map,
     build_openlineage_export,
     trace_downstream,
@@ -106,3 +107,15 @@ def test_jaffle_case_amount_columns_exclude_payment_method_predicate():
     assert payment_method_downstream.related_ids == [
         "column:stg_payments.payment_method"
     ]
+
+
+def test_openlineage_export_accepts_prebuilt_artifact():
+    manifest_path = _example_root() / "manifest.json"
+    artifact = build_catalog_artifact(manifest_path, dialect="postgres")
+
+    payload = build_openlineage_export(artifact)
+
+    path_payload = build_openlineage_export(manifest_path, dialect="postgres")
+    assert payload["datasets"] == path_payload["datasets"]
+    assert payload["columnLineage"] == path_payload["columnLineage"]
+    assert payload["job"]["name"] == "catalogkit"
