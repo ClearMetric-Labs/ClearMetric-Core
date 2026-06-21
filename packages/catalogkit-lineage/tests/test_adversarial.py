@@ -8,7 +8,7 @@ import yaml
 from catalogkit.lineage import build_lineage_map
 from catalogkit.lineage.graph import dataset_from_location
 
-from .ground_truth import FIXTURES_ROOT
+from .ground_truth import FIXTURES_ROOT, project_fixture_input
 
 ADVERSARIAL_ROOT = FIXTURES_ROOT / "adversarial"
 
@@ -25,11 +25,7 @@ def test_adversarial_fixture_matches_expected_behavior(expected_path: Path):
     dialect = payload["dialect"]
     mode = payload["mode"]
     case_root = expected_path.parent
-    project_input = (
-        case_root / "manifest.json"
-        if (case_root / "manifest.json").exists()
-        else case_root
-    )
+    project_input = project_fixture_input(case_root)
 
     lineage_map = build_lineage_map(project_input, dialect=dialect)
     actual_edges = {

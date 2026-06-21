@@ -13,7 +13,7 @@ from catalogkit.lineage.coverage import (
 )
 from catalogkit.lineage.loaders import load_project
 
-from .ground_truth import FIXTURES_ROOT, jaffle_shop_manifest, project_inputs
+from .ground_truth import FIXTURES_ROOT, project_inputs
 
 
 @pytest.mark.parametrize(
@@ -71,7 +71,7 @@ def test_fixture_edges_reference_existing_nodes(
 
 
 def test_source_leaf_regression_cases():
-    jaffle_manifest = jaffle_shop_manifest()
+    jaffle_manifest = FIXTURES_ROOT / "projects" / "jaffle_shop" / "manifest.json"
     shopify_manifest = FIXTURES_ROOT / "projects" / "shopify" / "manifest.json"
 
     jaffle_project = load_project(jaffle_manifest, dialect="postgres")
