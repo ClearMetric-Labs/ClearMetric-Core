@@ -6,8 +6,9 @@ from pathlib import Path
 import pytest
 import yaml
 from catalogkit.lineage import build_lineage_map
+from catalogkit.lineage.graph import _dataset_from_location
 
-from .ground_truth import FIXTURES_ROOT, _dataset_from_location
+from .ground_truth import FIXTURES_ROOT
 
 ADVERSARIAL_ROOT = FIXTURES_ROOT / "adversarial"
 

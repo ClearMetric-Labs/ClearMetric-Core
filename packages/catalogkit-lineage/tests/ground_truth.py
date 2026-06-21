@@ -5,6 +5,7 @@ from pathlib import Path
 
 import yaml
 from catalogkit.lineage import build_lineage_map, trace_downstream, trace_upstream
+from catalogkit.lineage.graph import _dataset_from_location
 
 FIXTURES_ROOT = Path(__file__).resolve().parent / "fixtures"
 
@@ -216,9 +217,3 @@ def _require_string_list(payload: dict, key: str, *, path: Path) -> tuple[str, .
             raise ValueError(f"Expected non-empty string entries in {key!r}: {path}")
         items.append(entry.strip())
     return tuple(items)
-
-
-def _dataset_from_location(location: str | None) -> str:
-    if not location:
-        return ""
-    return Path(location).stem
