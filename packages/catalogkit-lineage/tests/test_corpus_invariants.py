@@ -13,32 +13,12 @@ from catalogkit.lineage.coverage import (
 )
 from catalogkit.lineage.loaders import load_project
 
-from .ground_truth import FIXTURES_ROOT, project_dialects
-
-
-def _project_inputs() -> list[tuple[Path, str]]:
-    dialects = project_dialects()
-    inputs: list[tuple[Path, str]] = []
-    for project_dir in sorted((FIXTURES_ROOT / "projects").iterdir()):
-        if not project_dir.is_dir():
-            continue
-        project_input = (
-            project_dir / "manifest.json"
-            if (project_dir / "manifest.json").exists()
-            else project_dir
-        )
-        dialect = dialects.get(project_input.resolve())
-        if dialect is None:
-            raise AssertionError(
-                f"Missing ground-truth dialect mapping for fixture: {project_input}"
-            )
-        inputs.append((project_input, dialect))
-    return inputs
+from .ground_truth import FIXTURES_ROOT, jaffle_shop_manifest, project_inputs
 
 
 @pytest.mark.parametrize(
     ("project_input", "dialect"),
-    _project_inputs(),
+    project_inputs(),
     ids=lambda item: item.name if isinstance(item, Path) else str(item),
 )
 def test_fixture_has_no_silent_columns_or_bogus_source_leaves(
@@ -57,7 +37,7 @@ def test_fixture_has_no_silent_columns_or_bogus_source_leaves(
 
 @pytest.mark.parametrize(
     ("project_input", "dialect"),
-    _project_inputs(),
+    project_inputs(),
     ids=lambda item: item.name if isinstance(item, Path) else str(item),
 )
 def test_fixture_lineage_json_is_deterministic(
@@ -76,7 +56,7 @@ def test_fixture_lineage_json_is_deterministic(
 
 @pytest.mark.parametrize(
     ("project_input", "dialect"),
-    _project_inputs(),
+    project_inputs(),
     ids=lambda item: item.name if isinstance(item, Path) else str(item),
 )
 def test_fixture_edges_reference_existing_nodes(
@@ -91,7 +71,7 @@ def test_fixture_edges_reference_existing_nodes(
 
 
 def test_source_leaf_regression_cases():
-    jaffle_manifest = FIXTURES_ROOT / "projects" / "jaffle_shop" / "manifest.json"
+    jaffle_manifest = jaffle_shop_manifest()
     shopify_manifest = FIXTURES_ROOT / "projects" / "shopify" / "manifest.json"
 
     jaffle_project = load_project(jaffle_manifest, dialect="postgres")

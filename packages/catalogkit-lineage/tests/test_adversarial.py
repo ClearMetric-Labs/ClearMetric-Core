@@ -7,7 +7,9 @@ import pytest
 import yaml
 from catalogkit.lineage import build_lineage_map
 
-ADVERSARIAL_ROOT = Path(__file__).resolve().parent / "fixtures" / "adversarial"
+from .ground_truth import FIXTURES_ROOT, _dataset_from_location
+
+ADVERSARIAL_ROOT = FIXTURES_ROOT / "adversarial"
 
 
 def _expected_files() -> list[Path]:
@@ -55,9 +57,3 @@ def test_adversarial_fixture_matches_expected_behavior(expected_path: Path):
         return
 
     raise AssertionError(f"Unsupported adversarial mode {mode!r} in {expected_path}")
-
-
-def _dataset_from_location(location: str | None) -> str:
-    if not location:
-        return ""
-    return Path(location).stem

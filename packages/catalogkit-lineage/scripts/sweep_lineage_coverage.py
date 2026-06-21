@@ -1,28 +1,26 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 from catalogkit.lineage import build_catalog_artifact
 from catalogkit.lineage.coverage import coverage_summary
 from catalogkit.lineage.loaders import load_project
 
-FIXTURES_ROOT = Path(__file__).resolve().parents[1] / "tests" / "fixtures"
+PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> int:
-    dialects = _project_dialects()
+    sys.path.insert(0, str(PACKAGE_ROOT))
+    from tests.ground_truth import project_inputs
+
     exit_code = 0
-    for project_dir in sorted((FIXTURES_ROOT / "projects").iterdir()):
-        if not project_dir.is_dir():
-            continue
-        project_input = (
-            project_dir / "manifest.json"
-            if (project_dir / "manifest.json").exists()
-            else project_dir
+    for project_input, dialect in project_inputs():
+        project_dir = (
+            project_input.parent
+            if project_input.name == "manifest.json"
+            else project_input
         )
-        dialect = dialects.get(project_input.resolve())
-        if dialect is None:
-            raise SystemExit(f"Missing dialect mapping for fixture: {project_input}")
         project = load_project(project_input, dialect=dialect)
         artifact = build_catalog_artifact(project_input, dialect=dialect)
         summary = coverage_summary(artifact, project)
@@ -36,16 +34,6 @@ def main() -> int:
         if summary["silent"] or summary["bogus_source_leaves"]:
             exit_code = 1
     return exit_code
-
-
-def _project_dialects() -> dict[Path, str]:
-    import sys
-
-    package_root = Path(__file__).resolve().parents[1]
-    sys.path.insert(0, str(package_root))
-    from tests.ground_truth import project_dialects
-
-    return project_dialects()
 
 
 if __name__ == "__main__":

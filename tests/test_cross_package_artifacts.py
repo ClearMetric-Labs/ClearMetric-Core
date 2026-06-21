@@ -6,8 +6,9 @@ from catalogkit.core import merge
 from catalogkit.lineage import build_catalog_artifact
 from catalogkit.query import build_catalog_artifact as build_query_catalog_artifact
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
 JAFFLE_MANIFEST = (
-    Path(__file__).resolve().parents[1]
+    REPO_ROOT
     / "packages"
     / "catalogkit-lineage"
     / "tests"

@@ -174,6 +174,31 @@ def project_dialects() -> dict[Path, str]:
     return dialects
 
 
+def project_inputs() -> list[tuple[Path, str]]:
+    """Return project fixture paths paired with dialects from ground-truth YAML."""
+    dialects = project_dialects()
+    inputs: list[tuple[Path, str]] = []
+    for project_dir in sorted((FIXTURES_ROOT / "projects").iterdir()):
+        if not project_dir.is_dir():
+            continue
+        project_input = (
+            project_dir / "manifest.json"
+            if (project_dir / "manifest.json").exists()
+            else project_dir
+        )
+        dialect = dialects.get(project_input.resolve())
+        if dialect is None:
+            raise ValueError(
+                f"Missing ground-truth dialect mapping for fixture: {project_input}"
+            )
+        inputs.append((project_input, dialect))
+    return inputs
+
+
+def jaffle_shop_manifest() -> Path:
+    return FIXTURES_ROOT / "projects" / "jaffle_shop" / "manifest.json"
+
+
 def _require_string(payload: dict, key: str, *, path: Path) -> str:
     value = payload.get(key)
     if not isinstance(value, str) or not value.strip():
