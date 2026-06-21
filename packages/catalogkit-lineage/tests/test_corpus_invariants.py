@@ -7,6 +7,7 @@ from catalogkit.lineage.build import build_lineage_map_from_project
 from catalogkit.lineage.coverage import (
     ColumnResolution,
     classify_column,
+    coverage_summary,
     find_bogus_source_leaves,
     find_silent_columns,
 )
@@ -15,12 +16,22 @@ from catalogkit.lineage.render.json import render_json
 
 from .ground_truth import (
     FIXTURES_ROOT,
+    coverage_baselines,
     load_built_fixture,
     project_fixture_input,
     project_inputs,
 )
 
 PROJECT_FIXTURES = project_inputs()
+_COVERAGE_KEYS = (
+    "total",
+    "resolved",
+    "flagged",
+    "source_leaf",
+    "silent",
+    "bogus_source_leaves",
+    "warning_counts",
+)
 
 
 @pytest.mark.parametrize(
@@ -32,6 +43,9 @@ PROJECT_FIXTURES = project_inputs()
     ],
 )
 def test_fixture_corpus_invariants(project_input, dialect: str):
+    project_dir = (
+        project_input.parent if project_input.name == "manifest.json" else project_input
+    )
     project, artifact = load_built_fixture(project_input, dialect)
 
     silent_columns = find_silent_columns(artifact, project)
@@ -43,6 +57,13 @@ def test_fixture_corpus_invariants(project_input, dialect: str):
     for edge in artifact.edges:
         assert edge.source_id in node_ids
         assert edge.target_id in node_ids
+
+    baseline = coverage_baselines()[project_dir.name]
+    summary = coverage_summary(artifact, project)
+    for key in _COVERAGE_KEYS:
+        assert summary[key] == baseline[key], (
+            f"{project_dir.name}.{key}: expected {baseline[key]!r}, got {summary[key]!r}"
+        )
 
 
 def test_manifest_fixture_build_is_deterministic():

@@ -207,6 +207,15 @@ def load_built_fixture(
     return project, artifact
 
 
+@lru_cache(maxsize=1)
+def coverage_baselines() -> dict[str, dict[str, object]]:
+    baseline_path = FIXTURES_ROOT / "coverage_baseline.yaml"
+    payload = yaml.safe_load(baseline_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"Coverage baseline must be a mapping: {baseline_path}")
+    return payload
+
+
 def _require_string(payload: dict, key: str, *, path: Path) -> str:
     value = payload.get(key)
     if not isinstance(value, str) or not value.strip():
