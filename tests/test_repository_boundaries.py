@@ -354,7 +354,11 @@ def test_consumer_viewers_do_not_embed_policy_or_python():
         if "bundles/" in str(path):
             continue
         text = path.read_text(encoding="utf-8")
-        if "clearmetric." in text or "from clearmetric" in text or "import clearmetric" in text:
+        if (
+            "clearmetric." in text
+            or "from clearmetric" in text
+            or "import clearmetric" in text
+        ):
             violations.append(f"{path}: imports clearmetric Python modules")
         for banned in _BANNED_CONSUMER_STRINGS:
             if banned in text:
@@ -363,7 +367,9 @@ def test_consumer_viewers_do_not_embed_policy_or_python():
 
 
 def test_build_bundle_import_boundary():
-    tree = ast.parse(BUILD_BUNDLE.read_text(encoding="utf-8"), filename=str(BUILD_BUNDLE))
+    tree = ast.parse(
+        BUILD_BUNDLE.read_text(encoding="utf-8"), filename=str(BUILD_BUNDLE)
+    )
     violations: list[str] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):

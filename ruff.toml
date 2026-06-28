@@ -9,3 +9,6 @@ extend-exclude = [
 [lint]
 ignore = ["E501"]
 select = ["E", "F", "I"]
+
+[lint.per-file-ignores]
+"examples/notebooks/*.ipynb" = ["E402"]
