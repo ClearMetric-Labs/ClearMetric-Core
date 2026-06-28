@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.5.2 - 2026-06-28
+
+### Fixed
+
+- **CI** — ruff import order (`I001`), ruff format, and pyright in policy tests (no functional change from 0.5.1)
+
 ## 0.5.1 - 2026-06-28
 
 ### Changed (Wedge v1 + Phase 0 consolidation)
