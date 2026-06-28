@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.8.1 - 2026-06-28
+
+### Added (Consumer MVP demo hardening)
+
+- **lineage-demo bundle** — committed sql_folder fixture with non-empty column impact trace for lineage explorer
+- **lineage-sql-folder project** — purpose-built ClearMetric project under `examples/consumers/projects/`
+
+### Changed
+
+- **`build_bundle.py`** — atomic staging publish, loud v0 admin-lane guards, required `defaults.impact_key`, single-pass impact recipe parsing
+- **Viewers** — subject-only node warnings, graph-level warnings once in catalog viewer, honest empty lineage state
+- **artifact-kit** — `graphLevelWarnings()` helper; negative load tests for bad JSON and incomplete manifest
+
+### Docs
+
+- Two-bundle quick start (`minimal` catalog, `lineage-demo` lineage), notebook 04, architecture status line
+
 ## 0.8.0 - 2026-06-28
 
 ### Added (Consumer MVP Bundle)
