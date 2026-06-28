@@ -12,7 +12,7 @@ def test_source_order_and_enabled_sources(tmp_path: Path):
     project_dir = setup_wedge_project(tmp_path)
     project = load_project_config(project_dir)
     assert enabled_sources(project) == ["warehouse", "dbt"]
-    assert SOURCE_ORDER == ("warehouse", "dbt", "sql")
+    assert SOURCE_ORDER == ("warehouse", "dbt", "sql", "intent")
 
 
 def test_ingest_all_merges_warehouse_and_dbt(tmp_path: Path):

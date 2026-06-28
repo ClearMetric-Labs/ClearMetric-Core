@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 from clearmetric.core import CatalogArtifact
-
-from ..graph import (
+from clearmetric.graph import (
     TraversalDirection,
     build_traversal_subgraph,
     downstream_adjacency,
+    impact_edge_kind,
     upstream_adjacency,
+    view_of,
 )
+
 from ..models import LineageMap, TraversalResult
 
 
@@ -48,15 +50,18 @@ def render_traversal_tree(
     direction: TraversalDirection,
 ) -> str:
     """Render an upstream or downstream traversal tree."""
+    view = view_of(artifact)
+    edge_kind = impact_edge_kind(result.selection_id)
     adjacency = (
-        upstream_adjacency(artifact)
+        upstream_adjacency(view, edge_kind=edge_kind)
         if direction == "upstream"
-        else downstream_adjacency(artifact)
+        else downstream_adjacency(view, edge_kind=edge_kind)
     )
     node_ids, _edges = build_traversal_subgraph(
+        view,
         result.selection_id,
-        artifact,
         direction=direction,
+        edge_kind=edge_kind,
     )
     allowed_nodes = set(node_ids)
     lines = [

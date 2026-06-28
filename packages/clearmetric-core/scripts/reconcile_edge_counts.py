@@ -19,7 +19,7 @@ from collections import Counter
 from pathlib import Path
 
 import yaml
-from clearmetric.lineage.graph import column_selection_from_id
+from clearmetric.graph import column_selection_from_id
 
 FIXTURE_ROOT = (
     Path(__file__).resolve().parents[1]

@@ -13,9 +13,7 @@ from .api import (
     render_json,
     render_text,
     trace_downstream_from_artifact,
-    trace_downstream_from_project,
     trace_upstream_from_artifact,
-    trace_upstream_from_project,
 )
 from .errors import LineageContractError, LineageError, LineageInputError
 from .loaders import ProjectInput, load_project
@@ -38,8 +36,6 @@ __all__ = [
     "render_json",
     "render_text",
     "trace_downstream_from_artifact",
-    "trace_downstream_from_project",
     "trace_upstream_from_artifact",
-    "trace_upstream_from_project",
     "TraversalResult",
 ]

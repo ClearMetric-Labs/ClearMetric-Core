@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clearmetric.dev/spec/intent.schema.json",
+  "title": "ClearMetric Intent",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "metrics": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/metric" }
+    },
+    "queries": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/query" }
+    }
+  },
+  "$defs": {
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "formula"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "formula": { "type": "string", "minLength": 1 },
+        "unit": { "type": "string" },
+        "description": { "type": "string" },
+        "depends_on": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "query": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "sql"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "sql": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "depends_on": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    }
+  }
+}

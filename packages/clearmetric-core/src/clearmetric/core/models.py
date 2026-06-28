@@ -24,6 +24,8 @@ NodeKind = Literal[
     "visual",
     "page",
     "measure",
+    "metric",
+    "query",
 ]
 EdgeKind = Literal["depends_on", "feeds", "derives_from", "references", "joins"]
 MatchStatus = Literal["resolved", "ambiguous", "unresolved"]

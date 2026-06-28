@@ -12,7 +12,7 @@ Severity = Literal["error", "warn"]
 class Finding(BaseModel):
     check_id: str
     node_id: str | None = None
-    severity: Severity
+    severity: Severity | None = None
     message: str
     fix_hint: str | None = None
     tier: str | None = None

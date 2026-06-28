@@ -7,8 +7,13 @@ from dataclasses import dataclass
 from enum import Enum
 
 from clearmetric.core import CatalogArtifact
+from clearmetric.graph import (
+    column_selection_from_id,
+    dataset_from_location,
+    upstream_adjacency,
+    view_of,
+)
 
-from .graph import column_selection_from_id, dataset_from_location, upstream_adjacency
 from .loaders import ProjectInput
 
 
@@ -27,8 +32,9 @@ class _ClassificationContext:
 
 
 def _classification_context(artifact: CatalogArtifact) -> _ClassificationContext:
+    view = view_of(artifact)
     return _ClassificationContext(
-        adjacency=upstream_adjacency(artifact),
+        adjacency=upstream_adjacency(view),
         flagged_ids={
             warning.subject_id for warning in artifact.warnings if warning.subject_id
         },

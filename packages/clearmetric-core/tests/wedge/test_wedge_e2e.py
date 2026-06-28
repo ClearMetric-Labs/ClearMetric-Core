@@ -197,6 +197,6 @@ def test_compile_raises_security_floor_for_ai_without_classification(tmp_path: P
             )
         ]
     )
-    with patch("clearmetric.compiler.compile.ingest_all", return_value=[("dbt", bad)]):
+    with patch("clearmetric.compiler.pipeline.ingest_all", return_value=[("dbt", bad)]):
         with pytest.raises(SecurityFloorError):
             compile_project(project_dir)

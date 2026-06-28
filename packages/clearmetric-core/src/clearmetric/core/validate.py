@@ -54,6 +54,17 @@ def validate_artifact_dict(data: dict[str, Any]) -> dict[str, Any]:
     return _validate(data, "catalog-artifact.schema.json")
 
 
+def collect_schema_errors(data: dict[str, Any], schema_name: str) -> list[str]:
+    """Collect all schema validation errors (batch loud failure at adapter boundary)."""
+    schema = _load_schema(schema_name)
+    validator = Draft202012Validator(schema)
+    messages: list[str] = []
+    for error in sorted(validator.iter_errors(data), key=lambda err: list(err.path)):
+        path = ".".join(str(part) for part in error.path) or "<root>"
+        messages.append(f"{path}: {error.message}")
+    return messages
+
+
 def load_artifact_file(path: Path) -> CatalogArtifact:
     """Load and validate a catalog artifact JSON file."""
     try:

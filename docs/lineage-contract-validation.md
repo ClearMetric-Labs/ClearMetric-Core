@@ -6,7 +6,7 @@
 
 ## Public API (validated)
 
-Path-based wrappers (`build_catalog_artifact(path)`, etc.) were removed. Use project loading + `_from_project` entry points, or the compiler spine for wedge workflows.
+Path-based wrappers (`build_catalog_artifact(path)`, etc.) were removed. Use project loading + `_from_project` build entry points, artifact-first trace helpers, or the compiler spine for wedge workflows.
 
 ```python
 from clearmetric.compiler import compile
@@ -15,8 +15,8 @@ from clearmetric.lineage import (
     build_lineage_map_from_project,
     build_openlineage_export,
     load_project,
-    trace_downstream_from_project,
-    trace_upstream_from_project,
+    trace_downstream_from_artifact,
+    trace_upstream_from_artifact,
 )
 ```
 
@@ -25,11 +25,11 @@ from clearmetric.lineage import (
 | `load_project(path, dialect=...)` | dbt manifest path or SQL folder | `ProjectInput` |
 | `build_lineage_map_from_project(project, dialect=...)` | `ProjectInput` | `LineageMap` |
 | `build_catalog_artifact_from_project(project, dialect=...)` | `ProjectInput` | `CatalogArtifact` |
-| `trace_*_from_project(project, selection, dialect=...)` | `"orders.amount"` or `column:orders.amount` | `TraversalResult` |
+| `trace_*_from_artifact(artifact, selection)` | `"orders.amount"` or `column:orders.amount` | `TraversalResult` |
 | `build_openlineage_export(artifact, job_name=...)` | pre-built `CatalogArtifact` | OpenLineage-shaped dict |
 | `compile(project_dir)` | directory with `clearmetric.yaml` | `CompiledGraph` |
 
-Column selections are normalized via `clearmetric.core.ids.parse_column_selection`.
+Column and contract selections are normalized via `clearmetric.core.ids.parse_impact_selection` (columns, metrics, queries). Traversal uses `clearmetric.graph` internally.
 
 ## Merge Assumptions for `clearmetric.powerbi`
 

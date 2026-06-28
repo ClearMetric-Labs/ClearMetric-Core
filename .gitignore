@@ -1,18 +1,91 @@
+# OS
 .DS_Store
-.coverage
-.mypy_cache/
-.pytest_cache/
-.ruff_cache/
+Thumbs.db
+Desktop.ini
+
+# Editors and IDE
+.cursor/
+.idea/
+.vscode/
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# Cursor plans and local notes
+*.plan.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+pip-wheel-metadata/
+.installed.cfg
+MANIFEST
+
+# Virtual environments and local install sandboxes
 .venv/
 .venv-test/
 .pkgtest/
 .pkgtest-*/
 .pkgsmoke/
 .pkgmeta/
-__pycache__/
-*.egg-info/
-*.pyc
+
+# Build and packaging
 build/
 dist/
+*.whl
+
+# Test, lint, and type-check caches
+.coverage
+.coverage.*
+coverage.xml
 htmlcov/
+.hypothesis/
+.mypy_cache/
+.nox/
+.pytest_cache/
+.ruff_cache/
+.tox/
+
+# Lockfiles (repo uses pip/requirements, not uv)
 uv.lock
+
+# Secrets and local env
+.env
+.env.*
+!.env.example
+*.pem
+credentials.json
+secrets.yaml
+secrets.yml
+
+# Logs and temp files
+*.log
+*.tmp
+*.temp
+.cache/
+
+# Local databases
+*.duckdb
+*.db
+*.sqlite
+*.sqlite3
+
+# ClearMetric local project outputs (see docs/development.md)
+graph.json
+catalog.json
+warehouse_schema.json
+consumer-catalog.json
+frontend-contract.json
+openlineage.json
+findings.json
+
+# Local experiments
+prototypes/
+scratch/
+sandbox/

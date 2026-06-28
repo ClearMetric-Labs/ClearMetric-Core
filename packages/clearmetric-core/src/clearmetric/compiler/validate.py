@@ -8,6 +8,8 @@ from clearmetric.core.models import CatalogArtifact
 from clearmetric.core.project import Posture
 from clearmetric.policy import validate_security_floor
 
+from .contracts import validate_contract_nodes
+
 
 def check_graph(artifact: CatalogArtifact, *, posture: Posture) -> CleanerReport:
     """Report-only validation; does not raise."""
@@ -15,7 +17,8 @@ def check_graph(artifact: CatalogArtifact, *, posture: Posture) -> CleanerReport
 
 
 def enforce_graph(artifact: CatalogArtifact, *, posture: Posture) -> CleanerReport:
-    """Enforce structural checks and security floor."""
+    """Enforce structural checks, contract validation, and security floor."""
+    validate_contract_nodes(artifact)
     report = enforce_checks(artifact, posture=posture)
     validate_security_floor(artifact)
     return report

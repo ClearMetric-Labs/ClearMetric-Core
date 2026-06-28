@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 import yaml
-from clearmetric.lineage.graph import dataset_from_location
+from clearmetric.graph import dataset_from_location
 
 from .ground_truth import FIXTURES_ROOT, project_fixture_input
 from .project_helpers import build_lineage_map

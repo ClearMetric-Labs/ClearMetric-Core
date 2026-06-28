@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 PolicyDecision = Literal["allow", "deny", "mask", "filter"]
 PolicyKind = Literal["rbac", "rls", "masking", "ai_permission", "export"]
-PolicyEffect = Literal["allow", "deny"]
+PolicyEffect = Literal["allow", "deny", "mask"]
 
 
 class PolicySelector(BaseModel):

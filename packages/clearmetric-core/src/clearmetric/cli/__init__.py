@@ -14,6 +14,7 @@ from clearmetric.compiler import discover
 from clearmetric.compiler import impact as run_impact
 from clearmetric.compiler.validate import enforce_graph
 from clearmetric.core import ClearMetricError, __version__, load_artifact_file
+from clearmetric.core.contracts import find_query_node, query_execution_sql
 from clearmetric.emitters import emit_compile, emit_impact
 
 
@@ -63,9 +64,21 @@ def _build_root_parser() -> argparse.ArgumentParser:
     )
     compile_parser.add_argument(
         "--format",
-        choices=("json", "text", "openlineage", "catalog"),
+        choices=(
+            "json",
+            "text",
+            "openlineage",
+            "catalog",
+            "consumer-catalog",
+            "frontend-contract",
+            "ai-context",
+        ),
         default="json",
         help="Output format (default: json).",
+    )
+    compile_parser.add_argument(
+        "--identity",
+        help="Identity for policy-gated formats (consumer-catalog, openlineage, frontend-contract, ai-context).",
     )
 
     impact_parser = subparsers.add_parser(
@@ -85,6 +98,33 @@ def _build_root_parser() -> argparse.ArgumentParser:
         default="text",
         help="Output format (default: text).",
     )
+    impact_parser.add_argument(
+        "--identity",
+        help="Optional identity for governance preview (may omit denied downstream nodes).",
+    )
+
+    query_parser = subparsers.add_parser(
+        "query",
+        help="Execute a compiled query contract against DuckDB.",
+    )
+    query_parser.add_argument("query_id", help="Query node id, for example query:top_orders.")
+    query_parser.add_argument(
+        "artifact_path",
+        nargs="?",
+        help="Path to compiled graph JSON (default: graph.json in project dir).",
+    )
+
+    serve_parser = subparsers.add_parser(
+        "serve",
+        help="Serve compiled query contracts over HTTP.",
+    )
+    serve_parser.add_argument(
+        "artifact_path",
+        nargs="?",
+        help="Path to compiled graph JSON (default: graph.json in project dir).",
+    )
+    serve_parser.add_argument("--host", default="127.0.0.1")
+    serve_parser.add_argument("--port", type=int, default=8080)
 
     clean_parser = subparsers.add_parser(
         "clean",
@@ -238,7 +278,7 @@ def _run_scan(args: argparse.Namespace) -> int:
 
 def _run_compile(args: argparse.Namespace) -> int:
     compiled = run_compile(_project_dir(args))
-    print(emit_compile(args.format, compiled))
+    print(emit_compile(args.format, compiled, identity=getattr(args, "identity", None)))
     return 0
 
 
@@ -248,6 +288,7 @@ def _run_impact(args: argparse.Namespace) -> int:
         _project_dir(args),
         selection=args.selection,
         direction=direction,
+        identity=getattr(args, "identity", None),
     )
     print(
         emit_impact(
@@ -280,6 +321,37 @@ def _run_contract(args: argparse.Namespace) -> int:
     return 0
 
 
+def _artifact_path(args: argparse.Namespace) -> Path:
+    if getattr(args, "artifact_path", None):
+        return Path(args.artifact_path)
+    return _project_dir(args) / "graph.json"
+
+
+def _run_query(args: argparse.Namespace) -> int:
+    from clearmetric.runtime import execute_query
+
+    artifact = load_artifact_file(_artifact_path(args))
+    node = find_query_node(artifact, args.query_id)
+    if node is None:
+        print(f"cm error: query not found: {args.query_id}", file=sys.stderr)
+        return 1
+    sql = query_execution_sql(node)
+    if not sql:
+        print(f"cm error: query has no executable SQL: {args.query_id}", file=sys.stderr)
+        return 1
+    rows = execute_query(sql)
+    print(json.dumps(rows, indent=2, sort_keys=False))
+    return 0
+
+
+def _run_serve(args: argparse.Namespace) -> int:
+    from clearmetric.runtime import serve
+
+    artifact = load_artifact_file(_artifact_path(args))
+    serve(artifact, host=args.host, port=args.port)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_root_parser()
     args = parser.parse_args(argv)
@@ -299,6 +371,10 @@ def main(argv: list[str] | None = None) -> int:
             return _run_clean(args)
         if args.command == "contract":
             return _run_contract(args)
+        if args.command == "query":
+            return _run_query(args)
+        if args.command == "serve":
+            return _run_serve(args)
     except ClearMetricError as exc:
         print(f"cm error: {exc}", file=sys.stderr)
         return 1

@@ -8,6 +8,7 @@ PACKAGE_ROOT = REPO_ROOT / "packages" / "clearmetric-core"
 SRC_ROOT = PACKAGE_ROOT / "src" / "clearmetric"
 MODULE_ROOTS = {
     "core": SRC_ROOT / "core",
+    "graph": SRC_ROOT / "graph",
     "query": SRC_ROOT / "query",
     "lineage": SRC_ROOT / "lineage",
     "powerbi": SRC_ROOT / "powerbi",
@@ -17,12 +18,14 @@ MODULE_ROOTS = {
     "cleaner": SRC_ROOT / "cleaner",
     "policy": SRC_ROOT / "policy",
     "projection": SRC_ROOT / "projection",
+    "runtime": SRC_ROOT / "runtime",
     "cli": SRC_ROOT / "cli",
 }
 ALLOWED_MODULES_BY_SUBPACKAGE = {
     "core": {"clearmetric.core", "clearmetric.policy"},
+    "graph": {"clearmetric.core", "clearmetric.graph"},
     "query": {"clearmetric.core", "clearmetric.query"},
-    "lineage": {"clearmetric.core", "clearmetric.lineage"},
+    "lineage": {"clearmetric.core", "clearmetric.lineage", "clearmetric.graph"},
     "powerbi": {"clearmetric.core", "clearmetric.powerbi"},
     "adapters": {"clearmetric.core", "clearmetric.lineage"},
     "emitters": {
@@ -30,10 +33,13 @@ ALLOWED_MODULES_BY_SUBPACKAGE = {
         "clearmetric.lineage",
         "clearmetric.compiler",
         "clearmetric.projection",
+        "clearmetric.policy",
+        "clearmetric.graph",
     },
-    "cleaner": {"clearmetric.core"},
-    "policy": {"clearmetric.core"},
+    "cleaner": {"clearmetric.core", "clearmetric.graph"},
+    "policy": {"clearmetric.core", "clearmetric.policy", "clearmetric.projection"},
     "projection": {"clearmetric.core", "clearmetric.policy"},
+    "runtime": {"clearmetric.core", "clearmetric.runtime"},
     "compiler": {
         "clearmetric.core",
         "clearmetric.adapters",
@@ -41,6 +47,8 @@ ALLOWED_MODULES_BY_SUBPACKAGE = {
         "clearmetric.policy",
         "clearmetric.projection",
         "clearmetric.lineage",
+        "clearmetric.graph",
+        "clearmetric.query",
     },
     "cli": {
         "clearmetric.core",
@@ -48,6 +56,7 @@ ALLOWED_MODULES_BY_SUBPACKAGE = {
         "clearmetric.compiler",
         "clearmetric.emitters",
         "clearmetric.cleaner",
+        "clearmetric.runtime",
     },
 }
 SHARED_CLASS_NAMES = {"Node", "Edge", "Evidence", "Warning"}

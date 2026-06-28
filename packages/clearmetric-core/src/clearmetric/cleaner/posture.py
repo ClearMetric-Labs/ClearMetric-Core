@@ -2,19 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-
 from clearmetric.core.errors import StructuralCheckError
-from clearmetric.core.models import CatalogArtifact, Warning
+from clearmetric.core.models import Warning
 from clearmetric.core.project import Posture
+from clearmetric.graph import view_of
 
-from .checks import (
-    check_duplicate_bindings,
-    check_edges_resolve,
-    check_partial_derivation,
-    check_unique_node_ids,
-)
 from .models import CleanerReport, Finding, Severity
+from .specs import CHECKS
 
 CheckTier = str  # structural | error | warn
 
@@ -45,14 +39,6 @@ def resolve_severity(tier: CheckTier, posture: Posture) -> Severity | None:
     raise ValueError(f"Unknown posture: {posture!r}")
 
 
-CHECKS: list[Callable[[CatalogArtifact], list[Finding]]] = [
-    check_unique_node_ids,
-    check_edges_resolve,
-    check_duplicate_bindings,
-    check_partial_derivation,
-]
-
-
 def warnings_to_findings(warnings: list[Warning], posture: Posture) -> list[Finding]:
     findings: list[Finding] = []
     for warning in warnings:
@@ -72,10 +58,11 @@ def warnings_to_findings(warnings: list[Warning], posture: Posture) -> list[Find
     return findings
 
 
-def run_compile_checks(artifact: CatalogArtifact, *, posture: Posture) -> CleanerReport:
+def run_compile_checks(artifact, *, posture: Posture) -> CleanerReport:
+    view = view_of(artifact)
     findings: list[Finding] = []
     for check_fn in CHECKS:
-        for finding in check_fn(artifact):
+        for finding in check_fn(view):
             tier = finding.tier
             if tier is None:
                 raise ValueError(
@@ -91,7 +78,7 @@ def run_compile_checks(artifact: CatalogArtifact, *, posture: Posture) -> Cleane
     return CleanerReport(findings=findings)
 
 
-def enforce_checks(artifact: CatalogArtifact, *, posture: Posture) -> CleanerReport:
+def enforce_checks(artifact, *, posture: Posture) -> CleanerReport:
     report = run_compile_checks(artifact, posture=posture)
     errors = [finding for finding in report.findings if finding.severity == "error"]
     if errors:

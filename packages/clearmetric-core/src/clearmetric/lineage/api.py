@@ -11,9 +11,7 @@ from .build import (
     build_lineage_map_from_project,
     build_openlineage_export_from_artifact,
     trace_downstream_from_artifact,
-    trace_downstream_from_project,
     trace_upstream_from_artifact,
-    trace_upstream_from_project,
 )
 from .models import LineageMap, TraversalResult
 from .render.json import render_json
@@ -37,9 +35,7 @@ __all__ = [
     "render_json",
     "render_text",
     "trace_downstream_from_artifact",
-    "trace_downstream_from_project",
     "trace_upstream_from_artifact",
-    "trace_upstream_from_project",
     "LineageMap",
     "TraversalResult",
 ]

@@ -6,7 +6,7 @@ from collections import Counter
 
 import pytest
 import yaml
-from clearmetric.lineage.graph import (
+from clearmetric.graph import (
     column_selection_from_id,
     derives_from_counts_by_source_dataset,
 )

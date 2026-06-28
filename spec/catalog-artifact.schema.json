@@ -84,7 +84,9 @@
             "asset",
             "visual",
             "page",
-            "measure"
+            "measure",
+            "metric",
+            "query"
           ]
         },
         "name": { "type": "string", "minLength": 1 },

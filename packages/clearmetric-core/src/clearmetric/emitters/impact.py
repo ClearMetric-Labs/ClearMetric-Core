@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 
 from clearmetric.compiler.models import CompiledGraph
-from clearmetric.lineage.graph import TraversalDirection
+from clearmetric.graph import TraversalDirection
 from clearmetric.lineage.models import TraversalResult
 from clearmetric.lineage.render.mermaid import render_traversal_mermaid
 from clearmetric.lineage.render.text import render_traversal_tree

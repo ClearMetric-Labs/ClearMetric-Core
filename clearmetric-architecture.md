@@ -1,79 +1,92 @@
-# ClearMetric — Core Architecture
+# ClearMetric
 
-## What it does (in one breath)
-
-You point ClearMetric at your **warehouse and/or dbt project**. It compiles your entire
-analytics layer — metrics, queries, lineage, metadata, and access rules — into **one
-canonical graph**. Then your BI dashboards, your catalog, your lineage explorer, your AI
-agent's context, and your security policy are all **generated from that one graph**,
-instead of being defined separately in five different tools where they silently drift
-apart.
-
-Concretely, a developer runs it and gets:
-
-- **one source of truth** for what every metric means and where every column comes from,
-  derived from their SQL — not re-typed by hand;
-- **live, governed query primitives** their own frontend (React, Streamlit, Evidence, an
-  internal app, an AI agent) binds to, so they control the presentation and ClearMetric
-  controls the correctness;
-- **a built-in cleaner** that catches duplicate metrics, dead dashboards, ungoverned
-  sensitive data, and broken lineage before they ship — and that they can extend with
-  their own checks;
-- **one place to define access** (who and which AI agent may see what) that compiles down
-  to real warehouse policies.
-
-The problem it removes: today, "what revenue means," "where it comes from," "who can see
-it," and "what the dashboard shows" live in four different systems that drift. ClearMetric
-makes them four views of **one graph that cannot disagree with itself.**
-
-## The wedge — start narrow, let the foundation accrete (the dbt lesson)
-
-This document describes the full foundation. **Do not launch the full foundation.** dbt did
-not start as "the platform for all of analytics" — it started as one sharp, free,
-afternoon-sized tool for one specific pain (messy SQL transformations) and *earned* the
-foundation role through adoption. dbt Cloud's platform accreted *around* an already-adopted
-`dbt run`. The entire architecture below is the dbt-Cloud-scale ambition; it must enter the
-world as a dbt-Core-1.0-scale wedge.
-
-**The wedge: column-level lineage and impact analysis, from your existing SQL/dbt, free,
-local, one command.** "What breaks if I rename this column" is the sharp, legible,
-afternoon-sized win that is obviously useful before any of the rest exists. It needs only
-the resolver + lineage derivation + the graph — the smallest slice of the core — and it
-delivers value with zero authored intent, zero policy, zero setup beyond pointing at a
-project.
-
-```bash
-cm init
-cm connect warehouse --information-schema ./warehouse_schema.json
-cm scan          # point at warehouse and/or dbt and/or a SQL folder
-cm compile --format json > graph.json
-cm compile --format catalog > catalog.json
-cm impact column.fct_orders.net_revenue --upstream   # the wedge: what breaks?
-cm clean
-cm contract graph.json
-```
-
-Warehouse metadata is a **local INFORMATION_SCHEMA JSON export** in v1 — not a live connector.
-
-Shipped CLI entry point is `cm` (`python -m clearmetric.cli` if `cm` is occupied on PATH).
-
-Everything else in this document — contracts, the cleaner, policy, projections, AI context,
-governance, deployment flexibility, the paid history layer — is the foundation that grows
-*around* the wedge once it has earned attention. Lead with lineage/impact. Let the rest
-accrete. Launching the foundation first is a platform nobody adopts, because adoption
-requires a narrow, obvious win first.
-
-Two consequences this forces:
-- **The MVP's center of gravity is the wedge, not the whole core.** Module B (lineage)
-  *is* the wedge; Module A (live query) is the first thing that accretes around it. Build
-  the wedge to genuinely-works before broadening.
-- **Open source raises the bar to exactly the wedge's reliability.** Because the engine is
-  public, "does it work on real messy SQL" *is* the pitch. dbt Core won by reliably doing
-  its narrow thing. The resolver working on real SQL is therefore the whole game.
+**The analytics backbone. One canonical, queryable, governed graph of your entire analytics
+layer — compiled from the SQL, dbt, and warehouse metadata you already have — that you can
+build anything on top of.**
 
 ---
 
+## Overview
 
+Analytics today is scattered across tools that don't agree with each other. What a metric
+*means* lives in one place, where its data *comes from* lives in another, who's *allowed to
+see it* lives in a third, and what the dashboard *shows* lives in a fourth. They drift. Nobody
+can answer "what breaks if I change this column" without grepping five systems and hoping.
+
+ClearMetric compiles the layer *above* your data warehouse into **one canonical graph** —
+the analytics backbone. It derives that graph from artifacts you already produce (your dbt
+project, your raw SQL, your warehouse's INFORMATION_SCHEMA metadata), resolves one canonical
+identity for every table, column, and metric, and stamps every fact with where it came from
+and how confident it is.
+
+**That backbone is the product.** Everything else is something you build *on* it. Lineage is
+a view of the graph. A catalog is a view of the graph. Impact analysis is a traversal of the
+graph. A BI frontend binds to contracts over the graph. An AI agent reads a governed slice
+of the graph. Access policy filters the graph. Documentation is emitted from the graph. None
+of these are separate products with their own private source of truth that drifts — they are
+all views, traversals, and emissions of **one graph that cannot disagree with itself.**
+
+It is **not** a data warehouse and **not** a transformation tool (use dbt or existing OSS
+for that). It is **not** a BI tool or a renderer — it produces the graph, the contracts, and
+the results; you bring your own frontend, your own AI, your own presentation. ClearMetric
+owns the connective backbone between the model and the consumer, so your analytics is
+constrained by your infrastructure, never trapped inside someone's software.
+
+## What I'm trying to achieve
+
+Every BI and analytics tool I've used traps the semantics inside itself. Your metric
+definitions, your lineage, your access rules live in Power BI's guts or Tableau's workbook
+XML or a vendor's cloud, and they die there — you can't query them, version them, diff them,
+or take them with you. The result is dashboard graveyards nobody will delete because nobody
+knows what's load-bearing, metric definitions copy-pasted across forty workbooks that slowly
+drift apart, and "governance" that means a six-month rollout of shelfware.
+
+The goal of ClearMetric is to invert that: make the analytics backbone an **open, queryable
+graph** derived from infrastructure you already have, so that anything — a dashboard, an
+agent, a catalog, a governance check, a doc site — is built *on* the backbone instead of
+re-implementing its own private, drifting copy of the truth. Specifically:
+
+- **the structure writes itself** — lineage, dependencies, types, and impact are *derived*
+  from your SQL and warehouse metadata, not re-typed by hand;
+- **you only author what can't be derived** — what a metric means, who owns it, what's
+  sensitive, who may see it — and the backbone is honest about which is which;
+- **best practices are the default path**, not an exam — the safe, governed structure is what
+  you get for free, and the backbone is opinionated about *structure and integrity* while
+  staying out of the way on *content and judgment*;
+- **you can build anything on top** — new sources, new outputs, new checks, new policy, new
+  per-role views, new consumers nobody's thought of yet — all additive, because the core
+  operates on one standardized graph and knows nothing about where inputs come from or where
+  outputs go;
+- **nothing is trapped** — the graph and every artifact emit in open formats you own and can
+  leave with, and the engine itself is open source.
+
+## What you build on it
+
+The backbone is one graph; these are consumers of it, not separate products:
+
+- **Lineage & impact** — column-level lineage and "what breaks if I change this" as a
+  traversal of the graph.
+- **Catalog & metadata** — a browsable view of every table, column, model, and its
+  provenance.
+- **Schema-drift detection** — the graph validated against warehouse reality, surfacing
+  where definitions and data have diverged.
+- **Governed query contracts** — bindable contracts a BI frontend (React, Streamlit,
+  Evidence, an internal app) builds on, so you own the presentation and the backbone owns the
+  correctness.
+- **AI-agent context** — a governed, policy-filtered slice of the graph, serialized for an
+  LLM you bring (your model, your key).
+- **Access governance** — RBAC, RLS, masking, and AI-permission as policy over graph nodes,
+  compiled down to real warehouse policies.
+- **Automated documentation** — docs emitted from the graph, structurally always-fresh
+  because they're derived, with authored meaning layered on.
+
+Each is a view, traversal, projection, or emission of the same backbone. Adding a new one is
+additive — it reads the graph it never owns. That open-endedness *is* the product: the
+backbone is the durable thing; what you build on it is unbounded.
+
+---
+
+## What it is (precisely)
 
 A code-first analytics control plane that compiles code-defined metrics, queries,
 lineage, metadata, and policy intent into one canonical graph of queryable nodes and
@@ -617,28 +630,17 @@ Output:  compiled graph JSON · impact CLI · query endpoint ·
          minimal catalog JSON · frontend contract JSON · cleaner report
 ```
 
-### First demo (v1 shipped wedge)
-
+### First demo
 ```bash
-cm init
-cm connect warehouse --information-schema ./warehouse_schema.json
-cm scan
-cm compile --format json > graph.json
-cm compile --format catalog > catalog.json
-cm clean
-cm impact column.fct_orders.net_revenue --upstream
-cm contract graph.json
+clearmetric scan
+clearmetric compile
+clearmetric clean                       # built-in + any user checks
+clearmetric impact column.fct_orders.net_revenue
+clearmetric serve
+clearmetric query query.executive.revenue_by_month
 ```
-
-**Shipped in v1 wedge:** metadata-export warehouse adapter, dbt/SQL ingestion, physical
-bindings on lineage nodes, posture-aware cleaner, security floor, catalog projection via
-`compile --format catalog`, impact traversal on enforced graphs.
-
-**Deferred from v1 wedge:** `serve`, live query endpoint, YAML metrics & queries, full
-user-defined cleaner checks, live warehouse connectors (v1 uses INFORMATION_SCHEMA JSON
-exports only; no `cm connect snowflake` or query execution).
-
-See [`docs/v1-boundary.md`](docs/v1-boundary.md) for the full shipped vs deferred list.
+Then show the same metric powering: live query result · lineage traversal · catalog
+projection. That proves the thesis.
 
 ### Explicitly NOT in the MVP (keep attachment placeholders)
 ```
@@ -749,10 +751,6 @@ Crucially, jobs 1 and 2 are **read-only metadata/validation** and cheap; job 3 (
 execution) is the expensive runtime. The core treats all three as adapter/emitter
 capabilities, not core logic — so "warehouse-connected" is an identity of the *product*
 delivered through the *edges*, while the core stays source-agnostic.
-
-**v1 wedge honesty:** the shipped warehouse adapter implements job 1 via local
-INFORMATION_SCHEMA JSON exports only. Jobs 2 (live validation) and 3 (runtime query
-execution) are deferred. Do not document or implement live connector paths in the wedge CLI.
 
 ### Deployment is the same principle, applied to runtime
 

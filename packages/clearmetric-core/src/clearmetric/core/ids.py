@@ -153,6 +153,14 @@ def leaf_name(qualified_name: str) -> str:
     return normalized.split(".")[-1]
 
 
+def metric_id(name: str) -> str:
+    return f"metric:{normalize_identifier_part(name)}"
+
+
+def query_id(name: str) -> str:
+    return f"query:{normalize_identifier_part(name)}"
+
+
 def parse_column_selection(selection: str) -> str:
     """Parse a user column selection into canonical column: ID form."""
     text = selection.strip()
@@ -191,18 +199,46 @@ def parse_column_selection(selection: str) -> str:
     return column_id(parent, column)
 
 
+def parse_impact_selection(selection: str) -> str:
+    """Parse a user impact selection into canonical node ID form."""
+    text = selection.strip()
+    if not text:
+        raise CanonicalIdError("Impact selection cannot be empty.")
+
+    if text.startswith("column:") or text.startswith("column."):
+        return parse_column_selection(text)
+    if text.startswith("metric:"):
+        return metric_id(text[len("metric:") :])
+    if text.startswith("query:"):
+        return query_id(text[len("query:") :])
+
+    if "." in text:
+        return parse_column_selection(text)
+
+    prefix, _, remainder = text.partition(":")
+    if prefix == "metric" and remainder:
+        return metric_id(remainder)
+    if prefix == "query" and remainder:
+        return query_id(remainder)
+
+    return parse_column_selection(text)
+
+
 __all__ = [
     "asset_id",
     "column_id",
     "cte_id",
     "leaf_name",
     "measure_id",
+    "metric_id",
     "model_id",
     "normalize_identifier",
     "normalize_identifier_part",
     "normalize_identifier_parts",
     "page_id",
     "parse_column_selection",
+    "parse_impact_selection",
+    "query_id",
     "report_id",
     "schema_name",
     "split_qualified_identifier",

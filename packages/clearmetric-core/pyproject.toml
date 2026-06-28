@@ -46,6 +46,9 @@ dev = [
     "pytest>=7.0.0",
     "PyYAML>=6.0",
 ]
+runtime = [
+    "duckdb>=1.0.0",
+]
 release = [
     "build>=1.2.2",
     "twine>=5.1.1",

@@ -3,12 +3,9 @@
 from __future__ import annotations
 
 from clearmetric.core.interop import physical_binding_key
-from clearmetric.core.models import CatalogArtifact
+from clearmetric.graph import GraphView
 
 from .models import Finding
-
-# Posture resolves severity from tier; placeholder satisfies Finding validation only.
-_PLACEHOLDER_SEVERITY = "error"
 
 
 def _finding(
@@ -22,17 +19,17 @@ def _finding(
     return Finding(
         check_id=check_id,
         node_id=node_id,
-        severity=_PLACEHOLDER_SEVERITY,
+        severity=None,
         message=message,
         fix_hint=fix_hint,
         tier=tier,
     )
 
 
-def check_unique_node_ids(artifact: CatalogArtifact) -> list[Finding]:
+def check_unique_node_ids(view: GraphView) -> list[Finding]:
     seen: set[str] = set()
     findings: list[Finding] = []
-    for node in artifact.nodes:
+    for node in view.nodes():
         if node.id in seen:
             findings.append(
                 _finding(
@@ -47,10 +44,10 @@ def check_unique_node_ids(artifact: CatalogArtifact) -> list[Finding]:
     return findings
 
 
-def check_edges_resolve(artifact: CatalogArtifact) -> list[Finding]:
-    node_ids = {node.id for node in artifact.nodes}
+def check_edges_resolve(view: GraphView) -> list[Finding]:
+    node_ids = {node.id for node in view.nodes()}
     findings: list[Finding] = []
-    for edge in artifact.edges:
+    for edge in view.edges():
         if edge.source_id not in node_ids:
             findings.append(
                 _finding(
@@ -80,10 +77,10 @@ def check_edges_resolve(artifact: CatalogArtifact) -> list[Finding]:
     return findings
 
 
-def check_duplicate_bindings(artifact: CatalogArtifact) -> list[Finding]:
+def check_duplicate_bindings(view: GraphView) -> list[Finding]:
     binding_to_node: dict[tuple[str, str, str, str, str], str] = {}
     findings: list[Finding] = []
-    for node in artifact.nodes:
+    for node in view.nodes():
         if not node.bindings:
             continue
         for binding in node.bindings:
@@ -109,11 +106,9 @@ def check_duplicate_bindings(artifact: CatalogArtifact) -> list[Finding]:
     return findings
 
 
-def check_partial_derivation(artifact: CatalogArtifact) -> list[Finding]:
-    # partial → warn tier so strict compile succeeds on projects with honest resolver
-    # self-assessment; failed remains error-tier.
+def check_partial_derivation(view: GraphView) -> list[Finding]:
     findings: list[Finding] = []
-    for node in artifact.nodes:
+    for node in view.nodes():
         if node.derivation is None:
             continue
         if node.derivation.status == "partial":

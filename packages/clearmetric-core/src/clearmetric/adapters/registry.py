@@ -9,15 +9,17 @@ from clearmetric.core.errors import AdapterError
 from clearmetric.core.project import ClearMetricProject
 
 from .dbt import ingest_dbt
+from .intent import ingest_intent
 from .sql import ingest_sql
 from .warehouse import ingest_warehouse
 
-SOURCE_ORDER = ("warehouse", "dbt", "sql")
+SOURCE_ORDER = ("warehouse", "dbt", "sql", "intent")
 
 _ADAPTERS: dict[str, Callable[[ClearMetricProject], CatalogArtifact]] = {
     "warehouse": ingest_warehouse,
     "dbt": ingest_dbt,
     "sql": ingest_sql,
+    "intent": ingest_intent,
 }
 
 
@@ -29,6 +31,8 @@ def enabled_sources(project: ClearMetricProject) -> list[str]:
         enabled.append("dbt")
     if project.sources.sql is not None and project.sources.sql.paths:
         enabled.append("sql")
+    if project.sources.intent is not None and project.sources.intent.paths:
+        enabled.append("intent")
     return [kind for kind in SOURCE_ORDER if kind in enabled]
 
 

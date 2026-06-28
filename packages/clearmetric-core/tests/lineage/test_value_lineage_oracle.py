@@ -5,7 +5,7 @@ from __future__ import annotations
 from functools import lru_cache
 
 import yaml
-from clearmetric.lineage.graph import (
+from clearmetric.graph import (
     column_selection_from_id,
     derives_from_counts_by_source_dataset,
 )

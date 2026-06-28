@@ -8,8 +8,8 @@ from collections import Counter
 from pathlib import Path
 
 import yaml
+from clearmetric.graph import dataset_from_location
 from clearmetric.lineage import build_lineage_map_from_project, load_project
-from clearmetric.lineage.graph import dataset_from_location
 
 DEFAULT_FIXTURE_ROOT = (
     Path(__file__).resolve().parents[1]

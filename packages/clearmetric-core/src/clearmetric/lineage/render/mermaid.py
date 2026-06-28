@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 from clearmetric.core import CatalogArtifact
-
-from ..graph import TraversalDirection, build_traversal_subgraph
+from clearmetric.graph import (
+    TraversalDirection,
+    build_traversal_subgraph,
+    impact_edge_kind,
+    view_of,
+)
 
 
 def render_traversal_mermaid(
@@ -13,10 +17,13 @@ def render_traversal_mermaid(
     *,
     direction: TraversalDirection,
 ) -> str:
+    view = view_of(artifact)
+    edge_kind = impact_edge_kind(selection_id)
     node_ids, edges = build_traversal_subgraph(
+        view,
         selection_id,
-        artifact,
         direction=direction,
+        edge_kind=edge_kind,
     )
     lines = ["flowchart TD"]
     for node_id in node_ids:

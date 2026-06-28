@@ -45,6 +45,8 @@ cm contract graph.json
 
 See [`examples/wedge-jaffle/README.md`](../examples/wedge-jaffle/README.md).
 
+Backbone v2 features (metrics/queries, policy-gated `consumer-catalog`, optional `cm query`/`serve`) are documented in [`backbone-v2-roadmap.md`](backbone-v2-roadmap.md) and gated by [`adoption-gate.md`](adoption-gate.md). The wedge commands above are unchanged when those features are unused.
+
 ---
 
 ## Power BI module (V1 — Python API, not CLI registry)

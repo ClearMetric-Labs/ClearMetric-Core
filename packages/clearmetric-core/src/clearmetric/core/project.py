@@ -38,10 +38,15 @@ class SqlSource(BaseModel):
     paths: list[str] = Field(default_factory=list)
 
 
+class IntentSource(BaseModel):
+    paths: list[str] = Field(default_factory=list)
+
+
 class ProjectSources(BaseModel):
     warehouse: WarehouseSource | None = None
     dbt: DbtSource | None = None
     sql: SqlSource | None = None
+    intent: IntentSource | None = None
 
 
 class PolicyConfig(BaseModel):
@@ -123,9 +128,16 @@ def _resolve_project_paths(root: Path, project: ClearMetricProject) -> None:
             resolved_paths.append(str(_resolve_path(root, path)))
         sources.sql.paths = resolved_paths
 
+    if sources.intent is not None and sources.intent.paths:
+        has_source = True
+        resolved_paths = []
+        for path in sources.intent.paths:
+            resolved_paths.append(str(_resolve_path(root, path)))
+        sources.intent.paths = resolved_paths
+
     if not has_source:
         raise ProjectConfigError(
-            "Project must configure at least one source: warehouse, dbt.manifest, or sql.paths"
+            "Project must configure at least one source: warehouse, dbt.manifest, sql.paths, or intent.paths"
         )
 
     rules_path = _resolve_path(root, project.policy.rules)

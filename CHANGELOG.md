@@ -2,7 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## 0.5.0 - 2026-06-27
+
+### Added (Backbone v2)
+
+- **`clearmetric.graph`** — canonical `GraphView`, traversal helpers, selector grammar (Phase 0/5)
+- **Contract nodes** — `metric` / `query` kinds, `core/contracts.py`, `compiler/contracts.py` validation (Phase 1)
+- **Intent adapter** — `adapters/intent.py`, `spec/intent.schema.json`, batch validation errors (Phase 2)
+- **Policy gating** — `evaluate_node`, `gate`, `project_for_emit`, adversarial policy tests (Phase 3)
+- **`compile --format consumer-catalog --identity ID`** — policy-gated consumer catalog (additive; `catalog` unchanged)
+- **`compile --format frontend-contract --identity ID`** — query contract emitter (Phase 4a)
+- **`compile_contracts` pipeline stage** — `compiled_sql` on query nodes
+- **Runtime (optional)** — `clearmetric.runtime`, `cm query`, `cm serve`, `[runtime]` extra with DuckDB (Phase 4b)
+- **CheckSpec registry** — selector-scoped hygiene checks including `duplicate_formula` (Phase 5)
+- **Docs** — `docs/backbone-v2-roadmap.md`, `docs/adoption-gate.md`
+
+### Changed
+
+- **`cm impact`** — unfiltered by default; optional `--identity` for governance preview
+- **`--identity` required** for `consumer-catalog`, `openlineage`, `frontend-contract`, `ai-context` only
+- **Deleted** `project_graph`; use `project_for_emit` for policy-gated projections
+- **Deleted** `lineage/graph.py` and `trace_*_from_project` (GraphView consolidation)
 
 ## 0.4.0 - 2026-06-27
 

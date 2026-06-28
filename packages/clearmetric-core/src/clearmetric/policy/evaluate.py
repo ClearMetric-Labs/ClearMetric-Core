@@ -4,21 +4,38 @@ from __future__ import annotations
 
 from clearmetric.core.models import Node
 
-from .models import PolicyDecision, PolicyRulesFile
+from .models import PolicyDecision, PolicyRule, PolicyRulesFile
 
 
-def evaluate(*, node: Node, identity: str, rules: PolicyRulesFile) -> PolicyDecision:
+def _rule_matches(*, rule: PolicyRule, node: Node, identity: str) -> bool:
+    if rule.identity != identity:
+        return False
+    if rule.selector is not None and rule.selector.kind is not None:
+        if rule.selector.kind != node.kind:
+            return False
+    return True
+
+
+def evaluate_node(
+    *, node: Node, identity: str, rules: PolicyRulesFile
+) -> PolicyDecision:
+    """Evaluate policy for one node. Deny beats allow; exceptions fail closed."""
     try:
-        for rule in rules.rules:
-            if rule.effect != "allow":
-                continue
-            if rule.identity != identity:
-                continue
-            if rule.selector is not None and rule.selector.kind is not None:
-                if rule.selector.kind != node.kind:
-                    continue
+        matching = [
+            rule for rule in rules.rules if _rule_matches(rule=rule, node=node, identity=identity)
+        ]
+        if not matching:
+            return "deny"
+
+        if any(rule.effect == "deny" for rule in matching):
+            return "deny"
+
+        if any(rule.kind == "masking" or rule.effect == "mask" for rule in matching):
+            return "mask"
+
+        if any(rule.effect == "allow" for rule in matching):
             return "allow"
+
         return "deny"
     except Exception:
-        # Policy evaluation must fail closed when rule matching breaks.
         return "deny"
