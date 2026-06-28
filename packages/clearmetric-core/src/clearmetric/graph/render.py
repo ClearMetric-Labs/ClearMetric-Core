@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from clearmetric.core import CatalogArtifact, TraversalResult
 
+from .subjects import impact_edge_kind
 from .traverse import (
     TraversalDirection,
     build_traversal_subgraph,
     downstream_adjacency,
     upstream_adjacency,
 )
-from .subjects import impact_edge_kind
 from .view import view_of
 
 

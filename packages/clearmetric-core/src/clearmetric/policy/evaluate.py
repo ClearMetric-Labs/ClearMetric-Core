@@ -22,7 +22,9 @@ def evaluate_node(
     """Evaluate policy for one node. Deny beats allow; exceptions fail closed."""
     try:
         matching = [
-            rule for rule in rules.rules if _rule_matches(rule=rule, node=node, identity=identity)
+            rule
+            for rule in rules.rules
+            if _rule_matches(rule=rule, node=node, identity=identity)
         ]
         if not matching:
             return "deny"

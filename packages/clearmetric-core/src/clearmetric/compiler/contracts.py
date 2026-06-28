@@ -22,19 +22,21 @@ def validate_contract_nodes(artifact: CatalogArtifact) -> None:
         if contract is None:
             if node.kind in {"metric", "query"}:
                 aspect = "metric" if node.kind == "metric" else "query"
-                violations.append(f"{node.id} {node.kind} node missing aspects.{aspect}")
+                violations.append(
+                    f"{node.id} {node.kind} node missing aspects.{aspect}"
+                )
             continue
 
         if isinstance(contract, MetricContract):
             if not contract.formula.strip():
-                violations.append(f"{node.id} metric contract requires non-empty formula")
+                violations.append(
+                    f"{node.id} metric contract requires non-empty formula"
+                )
         elif isinstance(contract, QueryContract):
             if not contract.sql.strip():
                 violations.append(f"{node.id} query contract requires non-empty sql")
 
-    violations.extend(
-        contract_dependency_violations(artifact, node_ids=node_ids)
-    )
+    violations.extend(contract_dependency_violations(artifact, node_ids=node_ids))
 
     if violations:
         raise CompilerError("; ".join(violations))

@@ -10,10 +10,9 @@ from clearmetric.policy.models import PolicyRule, PolicyRulesFile, PolicySelecto
 from clearmetric.projection import project_consumer_catalog, project_for_emit
 
 
-def _node(**kwargs) -> Node:
-    defaults = {"id": "column:orders.email", "kind": "column", "name": "email"}
-    defaults.update(kwargs)
-    return Node(**defaults)
+def _node(**kwargs: object) -> Node:
+    payload = {"id": "column:orders.email", "kind": "column", "name": "email", **kwargs}
+    return Node.model_validate(payload)
 
 
 def test_deny_beats_allow_on_same_node():
@@ -51,7 +50,9 @@ def test_evaluator_exception_denies():
 
 def test_empty_rules_denies_by_default():
     node = _node()
-    assert evaluate_node(node=node, identity="analyst", rules=PolicyRulesFile()) == "deny"
+    assert (
+        evaluate_node(node=node, identity="analyst", rules=PolicyRulesFile()) == "deny"
+    )
 
 
 def test_wrong_identity_denies():
@@ -96,9 +97,7 @@ def test_mask_strips_sensitive_aspects_in_consumer_catalog():
             )
         ]
     )
-    projected = project_consumer_catalog(
-        artifact, identity="analyst", rules=rules
-    )
+    projected = project_consumer_catalog(artifact, identity="analyst", rules=rules)
     assert len(projected.nodes) == 1
     aspects = projected.nodes[0].aspects or {}
     assert "classification" not in aspects

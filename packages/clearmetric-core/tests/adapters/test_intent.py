@@ -62,8 +62,12 @@ def test_intent_ingest_builds_metric_and_query_nodes(tmp_path: Path):
 def test_intent_batch_validation_lists_all_errors(tmp_path: Path):
     intent_dir = tmp_path / "intent"
     intent_dir.mkdir()
-    (intent_dir / "bad.yaml").write_text("metrics:\n  - name: missing-id\n", encoding="utf-8")
-    (intent_dir / "also_bad.yaml").write_text("queries:\n  - id: q1\n", encoding="utf-8")
+    (intent_dir / "bad.yaml").write_text(
+        "metrics:\n  - name: missing-id\n", encoding="utf-8"
+    )
+    (intent_dir / "also_bad.yaml").write_text(
+        "queries:\n  - id: q1\n", encoding="utf-8"
+    )
     rules = tmp_path / "rules.yaml"
     rules.write_text("rules: []\n", encoding="utf-8")
 

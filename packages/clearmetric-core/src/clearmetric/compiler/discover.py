@@ -20,7 +20,9 @@ def discover(project_dir: Path) -> DiscoverReport:
         if kind == "warehouse":
             warehouse = project.sources.warehouse
             if warehouse is None:
-                raise CompilerError("enabled warehouse source missing from project config")
+                raise CompilerError(
+                    "enabled warehouse source missing from project config"
+                )
             sources.append(ResolvedSource(kind="warehouse", path=warehouse.path))
         elif kind == "dbt":
             dbt = project.sources.dbt
@@ -34,7 +36,9 @@ def discover(project_dir: Path) -> DiscoverReport:
             for path in sql.paths:
                 sources.append(ResolvedSource(kind="sql", path=path))
         else:
-            raise CompilerError(f"discover does not resolve enabled source kind: {kind!r}")
+            raise CompilerError(
+                f"discover does not resolve enabled source kind: {kind!r}"
+            )
 
     if project.aliases is not None:
         sources.append(ResolvedSource(kind="aliases", path=project.aliases))

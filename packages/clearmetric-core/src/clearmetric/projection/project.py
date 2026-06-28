@@ -37,9 +37,7 @@ def _slice_by_kinds(
 
 def project_catalog_assets(artifact: CatalogArtifact) -> CatalogArtifact:
     """Admin unfiltered asset slice for catalog output (no policy filter)."""
-    return _slice_by_kinds(
-        artifact, kinds=CATALOG_ASSET_KINDS, clear_warnings=True
-    )
+    return _slice_by_kinds(artifact, kinds=CATALOG_ASSET_KINDS, clear_warnings=True)
 
 
 def _apply_mask(node: Node) -> Node:
@@ -91,6 +89,4 @@ def project_consumer_catalog(
 ) -> CatalogArtifact:
     """Policy-gated consumer catalog slice."""
     gated = project_for_emit(artifact, identity=identity, rules=rules)
-    return _slice_by_kinds(
-        gated, kinds=CONSUMER_CATALOG_KINDS, clear_warnings=True
-    )
+    return _slice_by_kinds(gated, kinds=CONSUMER_CATALOG_KINDS, clear_warnings=True)

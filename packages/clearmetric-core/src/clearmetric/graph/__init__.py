@@ -25,7 +25,6 @@ from .traverse import (
 )
 from .view import GraphView, view_of
 
-
 __all__ = [
     "GraphView",
     "trace_downstream_from_artifact",

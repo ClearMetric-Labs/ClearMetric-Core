@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from clearmetric.core import TraversalResult
 from clearmetric.graph import (
     TraversalDirection,
     trace_downstream_from_artifact,
     trace_upstream_from_artifact,
 )
-from clearmetric.core import TraversalResult
 
 from .compile import compile
 from .models import CompiledGraph

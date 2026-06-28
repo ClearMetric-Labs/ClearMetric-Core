@@ -33,12 +33,12 @@ def test_walk_upstream_matches_derives_from_orientation():
         ],
     )
     view = GraphView.from_artifact(artifact)
-    assert walk_related(view, "column:out.col", direction="upstream", edge_kind="derives_from") == [
-        "column:in.col"
-    ]
-    assert walk_related(view, "column:in.col", direction="downstream", edge_kind="derives_from") == [
-        "column:out.col"
-    ]
+    assert walk_related(
+        view, "column:out.col", direction="upstream", edge_kind="derives_from"
+    ) == ["column:in.col"]
+    assert walk_related(
+        view, "column:in.col", direction="downstream", edge_kind="derives_from"
+    ) == ["column:out.col"]
 
 
 def test_build_traversal_subgraph_includes_selection():

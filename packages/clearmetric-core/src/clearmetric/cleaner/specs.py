@@ -37,9 +37,7 @@ def _wrap_with_selector(
         from clearmetric.core.models import CatalogArtifact
 
         subset = CatalogArtifact(
-            nodes=[
-                node for node in view.nodes() if matches_selector(predicate, node)
-            ]
+            nodes=[node for node in view.nodes() if matches_selector(predicate, node)]
         )
         return spec.fn(view_of(subset))
 
