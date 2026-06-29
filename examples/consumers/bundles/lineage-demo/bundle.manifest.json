@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
   "scenario_id": "lineage-demo",
-  "label": "SQL folder column lineage",
+  "label": "Lineage-demo downstream impact (lineage-demo project)",
   "artifacts": {
     "graph": {
       "path": "graph.json",

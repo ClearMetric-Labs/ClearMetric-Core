@@ -113,7 +113,8 @@ jobs:
         run: |
           cd examples/lineage-demo
           cm connect warehouse --information-schema ./warehouse_schema.json
-          cm scan
+          scan_output=$(cm scan)
+          echo "$scan_output"
           cm compile --format json > /tmp/lineage-demo-graph.json
           python - <<'PY'
           import json
@@ -121,15 +122,36 @@ jobs:
           derives = [e for e in payload["edges"] if e["kind"] == "derives_from"]
           assert derives, "expected non-zero derives_from edges from lineage-demo"
           PY
+          cm impact customers_report.customer_lifetime_value --upstream --format json > /tmp/lineage-demo-upstream.json
+          python - <<'PY'
+          import json
+          expected = sorted([
+              "column:customer_totals.total_amount",
+              "column:orders_base.amount",
+              "column:raw_orders.amount",
+          ])
+          payload = json.load(open("/tmp/lineage-demo-upstream.json"))
+          assert sorted(payload["related_ids"]) == expected
+          PY
           cm impact orders_base.amount --downstream --format json > /tmp/lineage-demo-impact.json
           python - <<'PY'
           import json
+          expected = sorted([
+              "column:customer_totals.total_amount",
+              "column:customers_report.customer_lifetime_value",
+          ])
           payload = json.load(open("/tmp/lineage-demo-impact.json"))
-          assert payload["related_ids"], "expected non-empty downstream impact"
+          assert sorted(payload["related_ids"]) == expected
           assert payload["traversed_edges"], "expected traversed_edges in impact JSON"
           PY
           cm clean
           cm contract /tmp/lineage-demo-graph.json
+
+      - name: Smoke test example notebooks (01–05)
+        run: CM_NOTEBOOK_SKIP_PIP=1 python scripts/verify_notebooks.py --skip-pip
+
+      - name: Smoke test notebooks (Colab-sim, no local clone)
+        run: CM_NOTEBOOK_SKIP_PIP=1 python scripts/verify_notebooks.py --skip-pip --colab-sim
 
   release-smoke:
     runs-on: ubuntu-latest

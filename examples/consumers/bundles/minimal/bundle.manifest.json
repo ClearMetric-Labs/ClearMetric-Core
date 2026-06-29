@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
   "scenario_id": "minimal",
-  "label": "Wedge jaffle fixture",
+  "label": "Lineage-demo minimal bundle (Shopify + sql_folder + warehouse)",
   "artifacts": {
     "graph": {
       "path": "graph.json",

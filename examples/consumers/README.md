@@ -30,10 +30,13 @@ The `?bundle=` parameter is **required**. It must point at a directory containin
 
 | Bundle | Fixture | Use |
 |--------|---------|-----|
-| **`minimal`** | lineage-demo (SQL + warehouse) | Column lineage, warehouse bind warnings, impact JSON with traversed edges. |
-| **`lineage-demo`** | sql_folder (plain SQL) | Non-empty column impact trace for lineage explorer screenshots. |
+| **`minimal`** | lineage-demo (Shopify dbt + sql_folder + warehouse) | Column lineage, impact JSON with traversed edges. |
+| **`lineage-demo`** | lineage-demo (same project) | Non-empty column impact trace for lineage explorer. |
 
 Cross-linking between viewers keeps the same `?bundle=` parameter so you can navigate within one bundle.
+
+For bundle anatomy, corpus checks, and Colab-friendly inspection without a local server, see
+[notebook 04](../notebooks/04_consumer_bundle.ipynb) and [notebooks/README.md](../notebooks/README.md).
 
 ## Regenerate bundles
 
@@ -46,13 +49,12 @@ python scripts/consumers/build_bundle.py --scenario examples/consumers/scenarios
 
 ```text
 examples/consumers/
-  projects/lineage-sql-folder/  # ClearMetric project for lineage-demo
   shared/artifact-kit.mjs       # loader helpers only
   catalog-viewer/               # browse catalog artifact
   lineage-explorer/             # flat impact list + links
   scenarios/                    # scenario recipes + checks.yaml
-  bundles/minimal/              # committed wedge fixture
-  bundles/lineage-demo/         # committed sql_folder fixture
+  bundles/minimal/              # committed lineage-demo fixture
+  bundles/lineage-demo/         # committed lineage-demo impact bundle
 ```
 
 Apps bind to **`bundle.manifest.json` + declared lanes** — never to a specific

@@ -1,5 +1,5 @@
 id: minimal
-label: Wedge jaffle fixture
+label: Lineage-demo minimal bundle (Shopify + sql_folder + warehouse)
 mode: project
 project_dir: ../../../lineage-demo
 outputs:

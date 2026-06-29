@@ -1,6 +1,8 @@
 # Lineage Demo
 
-Self-contained plain-SQL lineage example. Three SQL files form a small pipeline from `raw_orders` through `orders_base` → `customer_totals` → `customers_report`, merged with a local warehouse metadata export.
+Self-contained plain-SQL lineage example: three SQL models (`orders_base` → `customer_totals` → `customers_report`) merged with a **realistic warehouse metadata export** (Shopify-style raw landing zone: 22 tables, 280+ columns). Only `raw_orders` is referenced by the SQL pipeline.
+
+Notebooks can load this folder from the repository or fetch it from GitHub (see `examples/notebooks/_paths.py`).
 
 ## Prerequisites
 
@@ -14,27 +16,15 @@ cd examples/lineage-demo
 ```bash
 cm scan
 cm compile --format json > graph.json
-cm impact orders_base.amount --downstream --format json
-cm impact customers_report.customer_lifetime_value --upstream --format json
 cm compile --format catalog > catalog.json
+cm impact customers_report.customer_lifetime_value --upstream --format json
+cm impact orders_base.amount --downstream --format json
 cm clean
 cm contract graph.json
 ```
 
-The downstream impact probe on `orders_base.amount` returns two related columns:
+## Impact selections
 
-```bash
-cm impact orders_base.amount --downstream --format json
-```
+**Upstream** — `customers_report.customer_lifetime_value` → 3 related columns through `raw_orders.amount`
 
-Expected `related_ids`:
-
-- `column:customer_totals.total_amount`
-- `column:customers_report.customer_lifetime_value`
-
-## What this demonstrates
-
-- Plain SQL folder ingestion with column-level `derives_from` edges
-- Warehouse metadata merged into the same graph (physical bindings on table/column nodes)
-- Non-empty upstream/downstream impact traversal
-- Catalog output limited to table, column, and model nodes
+**Downstream** — `orders_base.amount` → `customer_totals.total_amount`, `customers_report.customer_lifetime_value`

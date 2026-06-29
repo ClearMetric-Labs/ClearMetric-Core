@@ -1,9 +1,0 @@
-version: 1
-dialect: postgres
-sources:
-  sql:
-    paths:
-      - ../../../../packages/clearmetric-core/tests/fixtures/lineage/projects/sql_folder
-posture: strict
-policy:
-  rules: ./policy/rules.yaml

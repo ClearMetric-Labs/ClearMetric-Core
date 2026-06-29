@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- **lineage-demo** — realistic Shopify-style warehouse export (22 tables) + SQL pipeline; notebooks fetch from GitHub when not in a clone
+- **Example notebooks** — intentional 01–05 curriculum, Colab-ready `_notebook_setup.py` bootstrap, centralized `_paths.py` asset manifests, raw → standardize teaching flow
+- **Notebook verification** — `scripts/verify_notebooks.py` smoke-tests 01–05 locally and in Colab-sim mode (`--colab-sim --skip-pip`)
+
+### Removed
+
+- **`examples/notebooks/_preview.py`** and **`_bootstrap.py`**
+- **`examples/consumers/projects/lineage-sql-folder/`** duplicate route
+- Shopify dbt source from lineage-demo (use catalog-demo for dbt + warehouse)
+
 ## 0.9.1 - 2026-06-28
 
 ### Fixed (V1 hardening)

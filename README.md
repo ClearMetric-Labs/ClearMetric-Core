@@ -11,7 +11,6 @@ all from the same compiled graph.
 ```bash
 pip install clearmetric-core
 cd examples/lineage-demo
-cm connect warehouse --information-schema ./warehouse_schema.json
 cm scan
 cm compile --format json > graph.json
 cm compile --format catalog > catalog.json

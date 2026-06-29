@@ -51,7 +51,14 @@
       }
     }
   ],
-  "warnings": [],
+  "warnings": [
+    {
+      "code": "warehouse_bind_unresolved",
+      "message": "column:orders_base.amount parent table could not be uniquely bound to warehouse metadata (match_status=unresolved)",
+      "location": null,
+      "subject_id": "column:orders_base.amount"
+    }
+  ],
   "derivation": [
     {
       "id": "column:customer_totals.total_amount",

@@ -1,47 +1,1291 @@
 {
-  "warehouse": "jaffle",
+  "warehouse": "snowflake-prod",
   "tables": [
     {
-      "name": "raw_customers",
-      "columns": [
-        {"name": "id", "data_type": "number"},
-        {"name": "first_name", "data_type": "text"}
-      ]
-    },
-    {
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
       "name": "raw_orders",
       "columns": [
-        {"name": "id", "data_type": "number"},
-        {"name": "amount", "data_type": "number"}
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "user_id",
+          "data_type": "number"
+        },
+        {
+          "name": "amount",
+          "data_type": "number"
+        },
+        {
+          "name": "order_number",
+          "data_type": "number"
+        },
+        {
+          "name": "email",
+          "data_type": "text"
+        },
+        {
+          "name": "financial_status",
+          "data_type": "text"
+        },
+        {
+          "name": "fulfillment_status",
+          "data_type": "text"
+        },
+        {
+          "name": "currency",
+          "data_type": "text"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "processed_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "closed_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "cancelled_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "subtotal_price",
+          "data_type": "number"
+        },
+        {
+          "name": "total_tax",
+          "data_type": "number"
+        },
+        {
+          "name": "total_discounts",
+          "data_type": "number"
+        },
+        {
+          "name": "total_line_items_price",
+          "data_type": "number"
+        },
+        {
+          "name": "total_weight",
+          "data_type": "number"
+        },
+        {
+          "name": "tags",
+          "data_type": "text"
+        },
+        {
+          "name": "source_name",
+          "data_type": "text"
+        },
+        {
+          "name": "landing_site",
+          "data_type": "text"
+        },
+        {
+          "name": "referring_site",
+          "data_type": "text"
+        },
+        {
+          "name": "note",
+          "data_type": "text"
+        },
+        {
+          "name": "test",
+          "data_type": "boolean"
+        },
+        {
+          "name": "buyer_accepts_marketing",
+          "data_type": "boolean"
+        }
       ]
     },
     {
-      "name": "raw_payments",
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_customers",
       "columns": [
-        {"name": "id", "data_type": "number"},
-        {"name": "amount", "data_type": "number"},
-        {"name": "payment_method", "data_type": "text"}
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "email",
+          "data_type": "text"
+        },
+        {
+          "name": "first_name",
+          "data_type": "text"
+        },
+        {
+          "name": "last_name",
+          "data_type": "text"
+        },
+        {
+          "name": "phone",
+          "data_type": "text"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "orders_count",
+          "data_type": "number"
+        },
+        {
+          "name": "total_spent",
+          "data_type": "number"
+        },
+        {
+          "name": "state",
+          "data_type": "text"
+        },
+        {
+          "name": "verified_email",
+          "data_type": "boolean"
+        },
+        {
+          "name": "tax_exempt",
+          "data_type": "boolean"
+        },
+        {
+          "name": "tags",
+          "data_type": "text"
+        },
+        {
+          "name": "currency",
+          "data_type": "text"
+        },
+        {
+          "name": "accepts_marketing",
+          "data_type": "boolean"
+        },
+        {
+          "name": "default_address_id",
+          "data_type": "number"
+        },
+        {
+          "name": "last_order_id",
+          "data_type": "number"
+        },
+        {
+          "name": "last_order_name",
+          "data_type": "text"
+        },
+        {
+          "name": "note",
+          "data_type": "text"
+        },
+        {
+          "name": "multipass_identifier",
+          "data_type": "text"
+        }
       ]
     },
     {
-      "name": "stg_customers",
-      "columns": [{"name": "customer_id", "data_type": "number"}]
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_order_line_items",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "order_id",
+          "data_type": "number"
+        },
+        {
+          "name": "product_id",
+          "data_type": "number"
+        },
+        {
+          "name": "variant_id",
+          "data_type": "number"
+        },
+        {
+          "name": "quantity",
+          "data_type": "number"
+        },
+        {
+          "name": "price",
+          "data_type": "number"
+        },
+        {
+          "name": "sku",
+          "data_type": "text"
+        },
+        {
+          "name": "title",
+          "data_type": "text"
+        },
+        {
+          "name": "vendor",
+          "data_type": "text"
+        },
+        {
+          "name": "fulfillment_status",
+          "data_type": "text"
+        },
+        {
+          "name": "grams",
+          "data_type": "number"
+        },
+        {
+          "name": "requires_shipping",
+          "data_type": "boolean"
+        },
+        {
+          "name": "gift_card",
+          "data_type": "boolean"
+        },
+        {
+          "name": "taxable",
+          "data_type": "boolean"
+        },
+        {
+          "name": "name",
+          "data_type": "text"
+        },
+        {
+          "name": "total_discount",
+          "data_type": "number"
+        },
+        {
+          "name": "fulfillment_service",
+          "data_type": "text"
+        },
+        {
+          "name": "product_exists",
+          "data_type": "boolean"
+        },
+        {
+          "name": "fulfillable_quantity",
+          "data_type": "number"
+        }
+      ]
     },
     {
-      "name": "stg_orders",
-      "columns": [{"name": "order_id", "data_type": "number"}]
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_products",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "title",
+          "data_type": "text"
+        },
+        {
+          "name": "handle",
+          "data_type": "text"
+        },
+        {
+          "name": "body_html",
+          "data_type": "text"
+        },
+        {
+          "name": "vendor",
+          "data_type": "text"
+        },
+        {
+          "name": "product_type",
+          "data_type": "text"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "published_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "tags",
+          "data_type": "text"
+        },
+        {
+          "name": "status",
+          "data_type": "text"
+        },
+        {
+          "name": "template_suffix",
+          "data_type": "text"
+        },
+        {
+          "name": "published_scope",
+          "data_type": "text"
+        },
+        {
+          "name": "admin_graphql_api_id",
+          "data_type": "text"
+        }
+      ]
     },
     {
-      "name": "stg_payments",
-      "columns": [{"name": "amount", "data_type": "number"}]
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_product_variants",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "product_id",
+          "data_type": "number"
+        },
+        {
+          "name": "title",
+          "data_type": "text"
+        },
+        {
+          "name": "sku",
+          "data_type": "text"
+        },
+        {
+          "name": "price",
+          "data_type": "number"
+        },
+        {
+          "name": "compare_at_price",
+          "data_type": "number"
+        },
+        {
+          "name": "inventory_quantity",
+          "data_type": "number"
+        },
+        {
+          "name": "weight",
+          "data_type": "number"
+        },
+        {
+          "name": "weight_unit",
+          "data_type": "text"
+        },
+        {
+          "name": "barcode",
+          "data_type": "text"
+        },
+        {
+          "name": "option1",
+          "data_type": "text"
+        },
+        {
+          "name": "option2",
+          "data_type": "text"
+        },
+        {
+          "name": "option3",
+          "data_type": "text"
+        },
+        {
+          "name": "taxable",
+          "data_type": "boolean"
+        },
+        {
+          "name": "requires_shipping",
+          "data_type": "boolean"
+        },
+        {
+          "name": "inventory_policy",
+          "data_type": "text"
+        },
+        {
+          "name": "fulfillment_service",
+          "data_type": "text"
+        },
+        {
+          "name": "inventory_management",
+          "data_type": "text"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "position",
+          "data_type": "number"
+        },
+        {
+          "name": "grams",
+          "data_type": "number"
+        }
+      ]
     },
     {
-      "name": "orders",
-      "columns": [{"name": "amount", "data_type": "number"}]
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_inventory_levels",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "inventory_item_id",
+          "data_type": "number"
+        },
+        {
+          "name": "location_id",
+          "data_type": "number"
+        },
+        {
+          "name": "available",
+          "data_type": "number"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "admin_graphql_api_id",
+          "data_type": "text"
+        }
+      ]
     },
     {
-      "name": "customers",
-      "columns": [{"name": "customer_lifetime_value", "data_type": "number"}]
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_inventory_items",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "sku",
+          "data_type": "text"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "requires_shipping",
+          "data_type": "boolean"
+        },
+        {
+          "name": "cost",
+          "data_type": "number"
+        },
+        {
+          "name": "tracked",
+          "data_type": "boolean"
+        },
+        {
+          "name": "country_code_of_origin",
+          "data_type": "text"
+        },
+        {
+          "name": "province_code_of_origin",
+          "data_type": "text"
+        },
+        {
+          "name": "harmonized_system_code",
+          "data_type": "text"
+        }
+      ]
+    },
+    {
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_refunds",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "order_id",
+          "data_type": "number"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "note",
+          "data_type": "text"
+        },
+        {
+          "name": "user_id",
+          "data_type": "number"
+        },
+        {
+          "name": "processed_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "restock",
+          "data_type": "boolean"
+        },
+        {
+          "name": "admin_graphql_api_id",
+          "data_type": "text"
+        }
+      ]
+    },
+    {
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_refund_line_items",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "refund_id",
+          "data_type": "number"
+        },
+        {
+          "name": "line_item_id",
+          "data_type": "number"
+        },
+        {
+          "name": "quantity",
+          "data_type": "number"
+        },
+        {
+          "name": "restock_type",
+          "data_type": "text"
+        },
+        {
+          "name": "subtotal",
+          "data_type": "number"
+        },
+        {
+          "name": "total_tax",
+          "data_type": "number"
+        },
+        {
+          "name": "location_id",
+          "data_type": "number"
+        }
+      ]
+    },
+    {
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_fulfillments",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "order_id",
+          "data_type": "number"
+        },
+        {
+          "name": "status",
+          "data_type": "text"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "tracking_company",
+          "data_type": "text"
+        },
+        {
+          "name": "tracking_number",
+          "data_type": "text"
+        },
+        {
+          "name": "shipment_status",
+          "data_type": "text"
+        },
+        {
+          "name": "service",
+          "data_type": "text"
+        },
+        {
+          "name": "name",
+          "data_type": "text"
+        },
+        {
+          "name": "location_id",
+          "data_type": "number"
+        }
+      ]
+    },
+    {
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_transactions",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "order_id",
+          "data_type": "number"
+        },
+        {
+          "name": "kind",
+          "data_type": "text"
+        },
+        {
+          "name": "gateway",
+          "data_type": "text"
+        },
+        {
+          "name": "status",
+          "data_type": "text"
+        },
+        {
+          "name": "message",
+          "data_type": "text"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "processed_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "amount",
+          "data_type": "number"
+        },
+        {
+          "name": "currency",
+          "data_type": "text"
+        },
+        {
+          "name": "authorization",
+          "data_type": "text"
+        },
+        {
+          "name": "payment_id",
+          "data_type": "text"
+        },
+        {
+          "name": "source_name",
+          "data_type": "text"
+        },
+        {
+          "name": "device_id",
+          "data_type": "number"
+        },
+        {
+          "name": "error_code",
+          "data_type": "text"
+        },
+        {
+          "name": "test",
+          "data_type": "boolean"
+        },
+        {
+          "name": "parent_id",
+          "data_type": "number"
+        }
+      ]
+    },
+    {
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_discount_applications",
+      "columns": [
+        {
+          "name": "index",
+          "data_type": "number"
+        },
+        {
+          "name": "order_id",
+          "data_type": "number"
+        },
+        {
+          "name": "type",
+          "data_type": "text"
+        },
+        {
+          "name": "value",
+          "data_type": "number"
+        },
+        {
+          "name": "value_type",
+          "data_type": "text"
+        },
+        {
+          "name": "allocation_method",
+          "data_type": "text"
+        },
+        {
+          "name": "target_selection",
+          "data_type": "text"
+        },
+        {
+          "name": "target_type",
+          "data_type": "text"
+        },
+        {
+          "name": "title",
+          "data_type": "text"
+        },
+        {
+          "name": "description",
+          "data_type": "text"
+        },
+        {
+          "name": "code",
+          "data_type": "text"
+        }
+      ]
+    },
+    {
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_abandoned_checkouts",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "token",
+          "data_type": "text"
+        },
+        {
+          "name": "cart_token",
+          "data_type": "text"
+        },
+        {
+          "name": "email",
+          "data_type": "text"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "completed_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "closed_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "total_price",
+          "data_type": "number"
+        },
+        {
+          "name": "currency",
+          "data_type": "text"
+        },
+        {
+          "name": "line_items_count",
+          "data_type": "number"
+        },
+        {
+          "name": "source_name",
+          "data_type": "text"
+        },
+        {
+          "name": "landing_site",
+          "data_type": "text"
+        },
+        {
+          "name": "referring_site",
+          "data_type": "text"
+        },
+        {
+          "name": "note",
+          "data_type": "text"
+        },
+        {
+          "name": "buyer_accepts_marketing",
+          "data_type": "boolean"
+        }
+      ]
+    },
+    {
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_marketing_events",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "event_type",
+          "data_type": "text"
+        },
+        {
+          "name": "occurred_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "utm_source",
+          "data_type": "text"
+        },
+        {
+          "name": "utm_medium",
+          "data_type": "text"
+        },
+        {
+          "name": "utm_campaign",
+          "data_type": "text"
+        },
+        {
+          "name": "utm_content",
+          "data_type": "text"
+        },
+        {
+          "name": "utm_term",
+          "data_type": "text"
+        },
+        {
+          "name": "customer_id",
+          "data_type": "number"
+        },
+        {
+          "name": "order_id",
+          "data_type": "number"
+        },
+        {
+          "name": "session_id",
+          "data_type": "text"
+        },
+        {
+          "name": "landing_page",
+          "data_type": "text"
+        },
+        {
+          "name": "referrer",
+          "data_type": "text"
+        },
+        {
+          "name": "device_type",
+          "data_type": "text"
+        },
+        {
+          "name": "browser",
+          "data_type": "text"
+        },
+        {
+          "name": "country",
+          "data_type": "text"
+        }
+      ]
+    },
+    {
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_locations",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "name",
+          "data_type": "text"
+        },
+        {
+          "name": "address1",
+          "data_type": "text"
+        },
+        {
+          "name": "address2",
+          "data_type": "text"
+        },
+        {
+          "name": "city",
+          "data_type": "text"
+        },
+        {
+          "name": "province",
+          "data_type": "text"
+        },
+        {
+          "name": "country",
+          "data_type": "text"
+        },
+        {
+          "name": "zip",
+          "data_type": "text"
+        },
+        {
+          "name": "phone",
+          "data_type": "text"
+        },
+        {
+          "name": "active",
+          "data_type": "boolean"
+        },
+        {
+          "name": "legacy",
+          "data_type": "boolean"
+        },
+        {
+          "name": "admin_graphql_api_id",
+          "data_type": "text"
+        },
+        {
+          "name": "localized_country_name",
+          "data_type": "text"
+        }
+      ]
+    },
+    {
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_collections",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "handle",
+          "data_type": "text"
+        },
+        {
+          "name": "title",
+          "data_type": "text"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "published_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "sort_order",
+          "data_type": "text"
+        },
+        {
+          "name": "template_suffix",
+          "data_type": "text"
+        },
+        {
+          "name": "published_scope",
+          "data_type": "text"
+        },
+        {
+          "name": "admin_graphql_api_id",
+          "data_type": "text"
+        }
+      ]
+    },
+    {
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_collects",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "product_id",
+          "data_type": "number"
+        },
+        {
+          "name": "collection_id",
+          "data_type": "number"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "position",
+          "data_type": "number"
+        },
+        {
+          "name": "sort_value",
+          "data_type": "text"
+        }
+      ]
+    },
+    {
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_metafields",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "owner_id",
+          "data_type": "number"
+        },
+        {
+          "name": "owner_resource",
+          "data_type": "text"
+        },
+        {
+          "name": "namespace",
+          "data_type": "text"
+        },
+        {
+          "name": "key",
+          "data_type": "text"
+        },
+        {
+          "name": "value",
+          "data_type": "text"
+        },
+        {
+          "name": "value_type",
+          "data_type": "text"
+        },
+        {
+          "name": "description",
+          "data_type": "text"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp"
+        },
+        {
+          "name": "admin_graphql_api_id",
+          "data_type": "text"
+        }
+      ]
+    },
+    {
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_customer_address",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "customer_id",
+          "data_type": "number"
+        },
+        {
+          "name": "first_name",
+          "data_type": "text"
+        },
+        {
+          "name": "last_name",
+          "data_type": "text"
+        },
+        {
+          "name": "company",
+          "data_type": "text"
+        },
+        {
+          "name": "address1",
+          "data_type": "text"
+        },
+        {
+          "name": "address2",
+          "data_type": "text"
+        },
+        {
+          "name": "city",
+          "data_type": "text"
+        },
+        {
+          "name": "province",
+          "data_type": "text"
+        },
+        {
+          "name": "country",
+          "data_type": "text"
+        },
+        {
+          "name": "zip",
+          "data_type": "text"
+        },
+        {
+          "name": "phone",
+          "data_type": "text"
+        },
+        {
+          "name": "is_default",
+          "data_type": "boolean"
+        },
+        {
+          "name": "name",
+          "data_type": "text"
+        },
+        {
+          "name": "country_code",
+          "data_type": "text"
+        },
+        {
+          "name": "province_code",
+          "data_type": "text"
+        }
+      ]
+    },
+    {
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_shipping_lines",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "order_id",
+          "data_type": "number"
+        },
+        {
+          "name": "title",
+          "data_type": "text"
+        },
+        {
+          "name": "price",
+          "data_type": "number"
+        },
+        {
+          "name": "code",
+          "data_type": "text"
+        },
+        {
+          "name": "source",
+          "data_type": "text"
+        },
+        {
+          "name": "phone",
+          "data_type": "text"
+        },
+        {
+          "name": "requested_fulfillment_service_id",
+          "data_type": "text"
+        },
+        {
+          "name": "carrier_identifier",
+          "data_type": "text"
+        },
+        {
+          "name": "discounted_price",
+          "data_type": "number"
+        },
+        {
+          "name": "delivery_category",
+          "data_type": "text"
+        }
+      ]
+    },
+    {
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_tax_lines",
+      "columns": [
+        {
+          "name": "index",
+          "data_type": "number"
+        },
+        {
+          "name": "order_id",
+          "data_type": "number"
+        },
+        {
+          "name": "title",
+          "data_type": "text"
+        },
+        {
+          "name": "price",
+          "data_type": "number"
+        },
+        {
+          "name": "rate",
+          "data_type": "number"
+        },
+        {
+          "name": "channel_liable",
+          "data_type": "boolean"
+        }
+      ]
+    },
+    {
+      "database": "ANALYTICS",
+      "schema": "SHOPIFY_RAW",
+      "name": "raw_order_adjustments",
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "number"
+        },
+        {
+          "name": "order_id",
+          "data_type": "number"
+        },
+        {
+          "name": "refund_id",
+          "data_type": "number"
+        },
+        {
+          "name": "amount",
+          "data_type": "number"
+        },
+        {
+          "name": "tax_amount",
+          "data_type": "number"
+        },
+        {
+          "name": "kind",
+          "data_type": "text"
+        },
+        {
+          "name": "reason",
+          "data_type": "text"
+        }
+      ]
     }
   ]
 }
