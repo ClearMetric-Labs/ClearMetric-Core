@@ -17,23 +17,11 @@ It does not connect to live warehouses or execute production queries.
 
 ## Inputs
 
-| Source | Format |
-|--------|--------|
-| Warehouse | Local INFORMATION_SCHEMA JSON export |
-| dbt | `manifest.json` (compiled SQL paths) |
-| SQL | Folder of `.sql` files |
+Warehouse JSON export, dbt `manifest.json`, and/or SQL folders — see [Run on your own project](getting-started/your-project.md).
 
-## Outputs (same compiled graph)
+## Outputs
 
-| Command / format | Output |
-|------------------|--------|
-| `compile --format json` | Full graph artifact JSON |
-| `compile --format catalog` | Table/column/model catalog slice |
-| `compile --format openlineage` | OpenLineage event JSON |
-| `impact --format json\|text\|mermaid` | Upstream/downstream related columns |
-| `clean --format json\|text` | Structural and posture findings |
-
-See [Input and output formats](reference/io-formats.md) and the [CLI reference](reference/cli.md).
+All public emitters read the same compiled graph. Format flags and commands: [Input and output formats](reference/io-formats.md) · [CLI reference](reference/cli.md).
 
 ## Out of scope (v1 public CLI)
 

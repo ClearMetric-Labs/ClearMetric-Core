@@ -35,16 +35,7 @@ resolution is incomplete.
 Full historical narrative lives in [`clearmetric-architecture.md`](https://github.com/ClearMetric-Labs/ClearMetric-Core/blob/main/clearmetric-architecture.md).
 Vision and long-term consumers: [`vision.md`](vision.md).
 
-## Self-contained quickstart
+## Quickstart
 
-```bash
-pip install clearmetric-core
-cd examples/lineage-demo
-cm connect warehouse --information-schema ./warehouse_schema.json
-cm scan
-cm compile --format json > graph.json
-cm impact orders_base.amount --downstream
-cm clean
-```
-
-See [`examples/lineage-demo/README.md`](https://github.com/ClearMetric-Labs/ClearMetric-Core/blob/main/examples/lineage-demo/README.md).
+Adoption path: [Five-minute demo](getting-started/five-minute-demo.md) on the docs site, or
+[`examples/lineage-demo/README.md`](https://github.com/ClearMetric-Labs/ClearMetric-Core/blob/main/examples/lineage-demo/README.md).

@@ -32,7 +32,7 @@ If `cm` is occupied on your PATH: `python -m clearmetric.cli --project-dir . …
 - **One graph** — warehouse, dbt, and SQL merged with physical bindings on lineage nodes
 - **Catalog** — `compile --format catalog` for table/column/model nodes
 - **OpenLineage** — `compile --format openlineage` for interop with DataHub, Marquez, etc.
-- **Cleaner + security floor** — structural checks and schema drift warnings; compile fails closed on security policy errors (see [Validation docs](https://clearmetric-labs.github.io/ClearMetric-Core/validation/what-works/))
+- **Cleaner + security floor** — structural checks and schema drift warnings; compile fails closed on security policy errors (see [`docs/limitations.md`](docs/limitations.md))
 
 ## Quickstart
 
@@ -99,8 +99,8 @@ One install (`pip install clearmetric-core`) — Python subpackages, not separat
 Static analysis for SQL/dbt lineage; warehouse **metadata exports** only in the public CLI.
 ClearMetric does not connect to live warehouses or execute production queries. On star-heavy
 SQL (`SELECT *` without schema), ClearMetric flags what it cannot resolve. See
-[Validation](https://clearmetric-labs.github.io/ClearMetric-Core/validation/what-works/) and
-[lineage limitations](docs/reference/lineage-limitations.md). Full manual on the [Docs site](https://clearmetric-labs.github.io/ClearMetric-Core/).
+[`docs/limitations.md`](docs/limitations.md) (pointers to Validation and the resolver spec) and the
+[Docs site](https://clearmetric-labs.github.io/ClearMetric-Core/).
 
 ## Feedback
 

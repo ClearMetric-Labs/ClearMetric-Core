@@ -10,6 +10,13 @@ Public wedge commands and formats (from `cm --help`). Generated CLI detail: [CLI
 | dbt | `sources.dbt.manifest` in `clearmetric.yaml` | Compiled `manifest.json` |
 | SQL | `sources.sql.paths` | Directory of `.sql` files |
 
+## Scan (`cm scan`)
+
+| `--format` | Output |
+|------------|--------|
+| `json` | Source list as JSON |
+| `text` | Human-readable list (default) |
+
 ## Compile (`cm compile`)
 
 | `--format` | Output |

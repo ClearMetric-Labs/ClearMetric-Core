@@ -156,7 +156,7 @@ See [backbone-v2-roadmap.md](backbone-v2-roadmap.md) for phase detail, error mat
 | MVP thesis | `test_mvp_demo.py` | Full subprocess demo path |
 | Wedge regression | `test_wedge_e2e.py` | Unchanged wedge commands still green |
 | Contracts | `test_contracts.py` | compiled_sql required |
-| Resolver | oracle + adversarial fixtures | limitations.md stays honest |
+| Resolver | oracle + adversarial fixtures | [validation/what-works.md](validation/what-works.md) stays honest |
 
 ---
 

@@ -13,6 +13,6 @@ When SQL is valid but messy (`SELECT *`, ambiguous joins, union branches), Clear
 Impact traversal uses **value lineage** (`derives_from`): columns whose values flow into an output.
 Predicate-only references (WHERE, JOIN ON, etc.) are out of scope for impact today.
 
-Resolver behavior and SQL pattern limits: [Lineage support and limits](../validation/sql-limits.md) → [full spec](../reference/lineage-limitations.md).
+Resolver behavior and SQL pattern limits: [SQL support and limits](../validation/sql-limits.md).
 
 Contract fields: [Artifact contract](../reference/contract.md).

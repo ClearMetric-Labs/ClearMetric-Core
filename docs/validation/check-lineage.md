@@ -49,4 +49,4 @@ Binding warnings are expected on some projects until metadata aligns with model 
 If expected lineage is missing and you believe the SQL is unambiguous, file an issue using
 [Help test on real projects](help-test.md).
 
-SQL pattern reference: [Lineage support and limits](../reference/lineage-limitations.md).
+SQL pattern reference: [SQL support and limits](sql-limits.md).

@@ -36,7 +36,7 @@ source .venv/bin/activate
 python -m pip install -e "packages/clearmetric-core[dev,release]"
 ```
 
-## Preview docs locally
+## Preview ClearMetric Core Docs locally
 
 ```bash
 python -m pip install -e "packages/clearmetric-core[docs,runtime]"

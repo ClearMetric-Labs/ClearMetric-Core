@@ -33,5 +33,3 @@ warnings with codes (e.g. `warehouse_bind_unresolved`), not silent wrong lineage
 1. [Check lineage yourself](check-lineage.md) on a column you know.
 2. Read [SQL support and limits](sql-limits.md) before trusting edge cases.
 3. [Help test on real projects](help-test.md) — the main feedback loop for resolver quality.
-
-Full resolver spec: [reference/lineage-limitations.md](../reference/lineage-limitations.md).
