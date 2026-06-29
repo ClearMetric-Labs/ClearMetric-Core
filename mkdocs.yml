@@ -42,12 +42,7 @@ nav:
       - Architecture: public-architecture.md
   - Roadmap: roadmap.md
 
-theme:
-  name: material
-  features:
-    - navigation.sections
-    - search.suggest
-    - content.code.copy
+theme: gitbook
 
 plugins:
   - search
