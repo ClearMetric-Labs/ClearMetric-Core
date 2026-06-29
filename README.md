@@ -40,7 +40,6 @@ Start with the self-contained [`examples/lineage-demo`](examples/lineage-demo/) 
 ```bash
 pip install clearmetric-core
 cd examples/lineage-demo
-cm connect warehouse --information-schema ./warehouse_schema.json
 cm scan
 cm compile --format json > graph.json
 cm impact orders_base.amount --downstream
