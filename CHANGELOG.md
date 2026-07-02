@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## 0.9.5 - 2026-07-02
+
+### Added
+
+- **Lineage module split** — `column_resolution.py`, `refs.py`, `sql_parse.py`, `star_expansion.py`, `union_lineage.py`, and `value_lineage.py` extracted from monolithic build/analyzer code
+- **Macro-union recall** — schema-key edge synthesis for macro-generated `UNION` statements at the outer SELECT
+- **Seed fixtures** — `cross_schema_short_ref`, `cte_ref_chain`, and `macro_union_star_branch` oracle cases
+
+### Changed
+
+- **Lineage build** — centralized star, union, ref, and column-resolution logic; removed lazy analyzer indirection
+
 ## 0.9.4 - 2026-07-02
 
 ### Added
