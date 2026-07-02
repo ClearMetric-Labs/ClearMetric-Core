@@ -464,16 +464,60 @@ def _cte_select_body(
     *,
     analysis: SqlStatementAnalysis,
 ) -> exp.Select | None:
+    branches = _cte_select_branches(cte_name, analysis=analysis)
+    return branches[0] if branches else None
+
+
+def _cte_select_branches(
+    cte_name: str,
+    *,
+    analysis: SqlStatementAnalysis,
+) -> tuple[exp.Select, ...]:
+    """Return SELECT branches composing a CTE body (handles UNION CTEs)."""
     target = normalize_identifier_part(cte_name)
     for cte in analysis.statement.find_all(exp.CTE):
-        if normalize_identifier_part(cte.alias_or_name) == target:
-            body = cte.this
-            if isinstance(body, exp.Union):
-                branches = tuple(_union_branch_selects(body))
-                return branches[0] if branches else None
-            if isinstance(body, exp.Select):
-                return body
-    return None
+        if normalize_identifier_part(cte.alias_or_name) != target:
+            continue
+        body = cte.this
+        if isinstance(body, exp.Union):
+            return tuple(_union_branch_selects(body))
+        if isinstance(body, exp.Select):
+            return (body,)
+    return ()
+
+
+def outer_union_cte_first_branch_refs(
+    output_name: str,
+    *,
+    analysis: SqlStatementAnalysis,
+) -> set[str]:
+    """When the outer SELECT reads a single UNION CTE, return first-branch upstream refs."""
+    outer = _outer_select(analysis.statement)
+    if not isinstance(outer, exp.Select):
+        return set()
+    from_clause = outer.args.get("from_") or outer.args.get("from")
+    if from_clause is None:
+        return set()
+    tables = [
+        table
+        for table in from_clause.find_all(exp.Table)
+        if isinstance(table, exp.Table)
+    ]
+    if len(tables) != 1:
+        return set()
+    table = tables[0]
+    cte_name = normalize_identifier_part(table.name or "")
+    if cte_name not in analysis.cte_names:
+        return set()
+    branches = _cte_select_branches(cte_name, analysis=analysis)
+    if len(branches) < 2:
+        return set()
+    ref = _branch_column_ref(
+        branches[0],
+        output_name=output_name,
+        analysis=analysis,
+    )
+    return {ref} if ref else set()
 
 
 def _projection_source_column_names(
@@ -981,6 +1025,9 @@ def cte_single_source_base_relation(
         if not alias or normalize_identifier_part(alias) != target:
             continue
         body = cte.this
+        if isinstance(body, exp.Union):
+            branches = tuple(_union_branch_selects(body))
+            body = branches[0] if branches else None
         if not isinstance(body, exp.Select):
             continue
         from_clause = body.args.get("from_") or body.args.get("from")
@@ -994,7 +1041,14 @@ def cte_single_source_base_relation(
         if len(tables) != 1:
             continue
         table = tables[0]
-        if normalize_identifier_part(table.name) in analysis.cte_names:
+        table_key = normalize_identifier_part(table.name or "")
+        if table_key in analysis.cte_names:
+            nested = cte_single_source_base_relation(
+                table_key,
+                analysis=analysis,
+            )
+            if nested is not None:
+                return nested
             continue
         return qualified_table_reference(table)
     return None
@@ -1387,7 +1441,7 @@ def _surrogate_key_value_refs(expression: Any) -> frozenset[str] | None:
     if not hash_names:
         return None
     if "year_month" in hash_names or {"year", "month"} & hash_names:
-        return frozenset({"year", "month"})
+        return frozenset({"year", "month", "year_month"})
     return None
 
 

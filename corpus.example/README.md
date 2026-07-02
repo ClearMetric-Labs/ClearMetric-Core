@@ -22,3 +22,18 @@ Each case under `corpus/cases/<case_id>/` must contain:
 
 Committed CI coverage uses `packages/clearmetric-core/tests/fixtures/lineage/seed/` and
 adversarial fixtures — not this template directory.
+
+## Private harness remeasurement
+
+Long Tuva discrepancy remeasurement uses a **build-once** scope union (not per-target
+rebuilds). Run outside IDE timeouts (e.g. `tmux`):
+
+```bash
+export CLEARMETRIC_LINEAGE_CACHE_DIR=corpus/reports/_lineage_build_cache
+cd packages/clearmetric-core
+uv run python scripts/corpus_external.py residual-overlap --repo tuva --force
+uv run python scripts/corpus_external.py residual-overlap --repo tuva --evaluate-checkpoints
+```
+
+Stale lineage cache or checkpoints raise errors; pass `--force` after engine or baseline
+changes. Never commit `corpus/` — only `corpus.example/` is public.

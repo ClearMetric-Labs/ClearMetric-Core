@@ -12,6 +12,7 @@ from clearmetric.compiler import clean as run_clean
 from clearmetric.compiler import compile as run_compile
 from clearmetric.compiler import discover
 from clearmetric.compiler import impact as run_impact
+from clearmetric.compiler.impact import impact_from_artifact
 from clearmetric.compiler.validate import enforce_graph
 from clearmetric.core import ClearMetricError, __version__, load_artifact_file
 from clearmetric.emitters import emit_compile, emit_impact
@@ -104,6 +105,12 @@ def _build_root_parser() -> argparse.ArgumentParser:
         choices=("text", "json", "mermaid"),
         default="text",
         help="Output format (default: text).",
+    )
+    impact_parser.add_argument(
+        "--artifact",
+        type=Path,
+        default=None,
+        help="Use a persisted CatalogArtifact JSON instead of compiling.",
     )
     if is_experimental_enabled():
         impact_parser.add_argument(
@@ -319,12 +326,22 @@ def _run_impact(args: argparse.Namespace) -> int:
     identity = getattr(args, "identity", None)
     if identity is not None:
         require_experimental("cm impact --identity")
-    compiled, result = run_impact(
-        _project_dir(args),
-        selection=args.selection,
-        direction=direction,
-        identity=identity,
-    )
+    artifact_path = getattr(args, "artifact", None)
+    if artifact_path is not None:
+        compiled, result = impact_from_artifact(
+            artifact_path,
+            _project_dir(args),
+            selection=args.selection,
+            direction=direction,
+            identity=identity,
+        )
+    else:
+        compiled, result = run_impact(
+            _project_dir(args),
+            selection=args.selection,
+            direction=direction,
+            identity=identity,
+        )
     print(
         emit_impact(
             compiled,

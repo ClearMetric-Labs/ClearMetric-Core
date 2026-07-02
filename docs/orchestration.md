@@ -23,10 +23,33 @@ cm connect warehouse --information-schema ./warehouse_schema.json
 cm scan
 cm compile --format json > graph.json
 cm compile --format catalog > catalog.json
-cm impact orders.amount --upstream
+cm impact orders.amount --upstream --artifact graph.json
 cm clean
 cm contract graph.json
 ```
+
+Recompile only when the manifest, engine, or warehouse overlay changes. For repeated impact
+queries against a stable graph, persist the compile output and pass `--artifact`:
+
+```bash
+cm compile --format json > graph.json
+cm contract graph.json
+cm impact my_schema.my_model.amount --upstream --artifact graph.json
+```
+
+Private corpus harness (`scripts/corpus_external.py`, gitignored `corpus/`) uses generic
+engine scoped builds (`build_scoped_lineage_cached`, `loaders.union_build_scope_for_targets`)
+via `scripts/_corpus_measurement.py` for reference-baseline compare:
+
+```bash
+export CLEARMETRIC_LINEAGE_CACHE_DIR=corpus/reports/_lineage_build_cache
+cd packages/clearmetric-core
+uv run python scripts/corpus_external.py residual-overlap --repo tuva --force
+uv run python scripts/corpus_external.py residual-overlap --repo tuva --evaluate-checkpoints
+```
+
+Run long harness builds in `tmux` outside IDE shells; stale cache or checkpoints raise loud
+errors — rerun with `--force` after engine or baseline changes.
 
 ```python
 from pathlib import Path

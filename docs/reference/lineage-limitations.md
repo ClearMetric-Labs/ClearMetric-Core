@@ -14,7 +14,10 @@ corpus** (see synthetic layout in `corpus.example/cases/example/`). Set
 Public CI does not depend on corpus data or comparator reports.
 
 DataHub comparison in the private harness is a **comparator only** — it finds candidate
-disagreements but shares sqlglot blind spots and is not ground truth. Comparator buckets
+disagreements but shares sqlglot blind spots and is not ground truth. Scoped residual
+measurement, checkpoint resume, and projected recall live in the private harness
+(`scripts/_corpus_measurement.py`, invoked via `scripts/corpus_external.py residual-overlap`).
+Comparator buckets
 (`both`, `datahub_only`, …) require **exact whole-model edge-set equality**; per-model
 `overlap` blocks distinguish normalization mismatch from genuine semantic disagreement.
 

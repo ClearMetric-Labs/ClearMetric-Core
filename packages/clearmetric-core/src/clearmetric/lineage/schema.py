@@ -288,7 +288,7 @@ def overlay_types_from_dbt_catalog(
 def overlay_from_frozen_schema(
     frozen: dict[str, dict[str, str]],
 ) -> ResolverTypeOverlay:
-    """Build a typed overlay from a hand-frozen corpus schema dict."""
+    """Build a typed overlay from a hand-frozen schema dict."""
     by_dataset: dict[str, dict[str, ColumnTypeEntry]] = {}
     for dataset_name, columns in frozen.items():
         entries = {
@@ -304,7 +304,7 @@ def overlay_from_frozen_schema(
 
 
 def load_frozen_schema_overlay(path: Path) -> ResolverTypeOverlay | None:
-    """Load optional per-case schema.json for local corpus runs."""
+    """Load optional per-case schema.json overlay from disk."""
     if not path.is_file():
         return None
     return resolve_type_overlay(path)

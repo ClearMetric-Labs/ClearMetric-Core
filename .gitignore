@@ -6,6 +6,7 @@
 
 # Harness orchestrator during transition (prefer /harness/scripts/)
 packages/clearmetric-core/scripts/corpus_external.py
+packages/clearmetric-core/scripts/_corpus_measurement.py
 packages/clearmetric-core/scripts/corpus_triage.py
 packages/clearmetric-core/scripts/_lineage_diff.py
 

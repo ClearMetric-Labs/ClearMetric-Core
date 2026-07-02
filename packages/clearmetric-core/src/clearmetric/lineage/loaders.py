@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal, TypedDict, cast
@@ -12,6 +12,7 @@ from clearmetric.core import leaf_name, normalize_identifier
 from clearmetric.core.models import Warning
 
 from .errors import LineageInputError
+from .relations import relation_fqn_lookup_keys
 from .schema import (
     ResolverTypeOverlay,
     TypeSource,
@@ -623,3 +624,332 @@ def _apply_warehouse_overlay_to_datasets(
             resource_type=existing.resource_type,
         )
     return updated
+
+
+def transitive_local_dependencies(
+    project: ProjectInput,
+    *,
+    seeds: frozenset[str],
+) -> frozenset[str]:
+    """Return all local datasets reachable upstream from ``seeds``."""
+    local_names = project.local_dataset_names()
+    missing = sorted(seed for seed in seeds if seed not in project.datasets)
+    if missing:
+        raise LineageInputError(
+            f"transitive_local_dependencies missing seed datasets: {missing}"
+        )
+    visited: set[str] = set()
+    stack = list(seeds)
+    while stack:
+        dataset_name = stack.pop()
+        if dataset_name not in local_names or dataset_name in visited:
+            continue
+        visited.add(dataset_name)
+        stack.extend(project.datasets[dataset_name].dependency_names)
+    return frozenset(visited)
+
+
+def subset_project(
+    project: ProjectInput,
+    model_names: frozenset[str],
+) -> ProjectInput:
+    """Return a project containing only ``model_names`` with closed local deps."""
+    missing = sorted(name for name in model_names if name not in project.datasets)
+    if missing:
+        raise LineageInputError(f"subset_project missing datasets: {missing}")
+    local_names = project.local_dataset_names()
+    for name in model_names:
+        dataset = project.datasets[name]
+        for dependency_name in dataset.dependency_names:
+            if (
+                dependency_name in local_names
+                and dependency_name not in model_names
+            ):
+                raise LineageInputError(
+                    "subset_project closure incomplete: "
+                    f"{name} depends on local {dependency_name!r} not in model_names"
+                )
+    datasets = {
+        name: project.datasets[name] for name in sorted(model_names)
+    }
+    return ProjectInput(
+        input_kind=project.input_kind,
+        label=project.label,
+        datasets=datasets,
+        manifest_compile_report=project.manifest_compile_report,
+        type_warnings=project.type_warnings,
+    )
+
+
+def _manifest_identity_index(nodes: dict[str, dict]) -> dict[str, str]:
+    index: dict[str, str] = {}
+    for uid, node in nodes.items():
+        if not uid.startswith("model."):
+            continue
+        try:
+            identity = resolve_dbt_dataset_identity(node)
+        except LineageInputError:
+            continue
+        canonical_keys = {normalize_identifier(identity)}
+        canonical_keys.update(relation_fqn_lookup_keys(identity))
+        short_keys: set[str] = set()
+        alias = str(node.get("alias") or "").strip()
+        name = str(node.get("name") or "").strip()
+        if alias:
+            short_keys.add(normalize_identifier(alias))
+        if name:
+            short_keys.add(normalize_identifier(name))
+        short_keys.difference_update(canonical_keys)
+
+        for key in canonical_keys:
+            if not key:
+                continue
+            existing = index.get(key)
+            if existing is not None and existing != uid:
+                raise LineageInputError(
+                    "Ambiguous manifest identity index: "
+                    f"key {key!r} maps to both {existing!r} and {uid!r}."
+                )
+            index[key] = uid
+
+        for key in short_keys:
+            if not key:
+                continue
+            existing = index.get(key)
+            if existing is not None and existing != uid:
+                continue
+            index[key] = uid
+    return index
+
+
+def _resolve_manifest_model_uids(
+    nodes: dict[str, dict],
+    model_identities: set[str],
+) -> dict[str, str]:
+    identity_index = _manifest_identity_index(nodes)
+    resolved: dict[str, str] = {}
+    for model_identity in model_identities:
+        keys = {normalize_identifier(model_identity)}
+        keys.update(relation_fqn_lookup_keys(model_identity))
+        matched: set[str] = set()
+        for key in keys:
+            uid = identity_index.get(key)
+            if uid is not None:
+                matched.add(uid)
+        if len(matched) > 1:
+            raise LineageInputError(
+                f"Ambiguous manifest identity for {model_identity!r}: "
+                f"matched uids {sorted(matched)}"
+            )
+        if len(matched) == 0:
+            raise LineageInputError(
+                f"Model identity {model_identity!r} not found in manifest nodes."
+            )
+        resolved[model_identity] = next(iter(matched))
+    return resolved
+
+
+def _apply_transitive_dbt_deps(nodes: dict[str, dict], included: set[str]) -> None:
+    pending = set(included)
+    while pending:
+        uid = pending.pop()
+        node = nodes.get(uid, {})
+        depends = node.get("depends_on", {})
+        if not isinstance(depends, dict):
+            continue
+        for dep in depends.get("nodes", []):
+            dep_uid = str(dep)
+            if not dep_uid.startswith("model."):
+                continue
+            if dep_uid in included or dep_uid not in nodes:
+                continue
+            included.add(dep_uid)
+            pending.add(dep_uid)
+
+
+def _apply_sql_visible_models_single_hop(
+    nodes: dict[str, dict],
+    included: set[str],
+    *,
+    dialect: str,
+    identity_index: dict[str, str],
+) -> None:
+    for uid in tuple(included):
+        node = nodes.get(uid, {})
+        compiled = str(node.get("compiled_code") or "").strip()
+        if not compiled:
+            continue
+        for reference in list_table_references(compiled, dialect=dialect):
+            keys = {normalize_identifier(reference)}
+            keys.update(relation_fqn_lookup_keys(reference))
+            matched_uids: set[str] = set()
+            for key in keys:
+                matched_uid = identity_index.get(key)
+                if matched_uid is not None:
+                    matched_uids.add(matched_uid)
+            if len(matched_uids) > 1:
+                raise LineageInputError(
+                    f"Ambiguous SQL reference {reference!r} in {uid!r} "
+                    f"matched model uids: {sorted(matched_uids)}"
+                )
+            if len(matched_uids) == 1:
+                included.add(next(iter(matched_uids)))
+
+
+def manifest_model_closure(
+    manifest_path: Path,
+    seed_uids: frozenset[str],
+    *,
+    dialect: str = "duckdb",
+    with_dbt_deps: bool = True,
+    with_sql_visible_hop: bool = True,
+) -> frozenset[str]:
+    """Return manifest model uids reachable from seeds via closure rules."""
+    if not seed_uids:
+        raise LineageInputError("manifest_model_closure requires at least one seed uid.")
+
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    nodes = payload.get("nodes", {})
+    if not isinstance(nodes, dict):
+        raise LineageInputError(f"Manifest missing nodes object: {manifest_path}")
+
+    missing_seeds = sorted(uid for uid in seed_uids if uid not in nodes)
+    if missing_seeds:
+        raise LineageInputError(
+            f"Seed model uids missing from manifest {manifest_path}: {missing_seeds}"
+        )
+
+    included = set(seed_uids)
+    if with_dbt_deps:
+        _apply_transitive_dbt_deps(nodes, included)
+    if with_sql_visible_hop:
+        identity_index = _manifest_identity_index(nodes)
+        _apply_sql_visible_models_single_hop(
+            nodes,
+            included,
+            dialect=dialect,
+            identity_index=identity_index,
+        )
+    if not included:
+        raise LineageInputError(
+            f"Manifest closure included zero models from {manifest_path}."
+        )
+    return frozenset(included)
+
+
+def manifest_model_closure_for_identities(
+    full_manifest_path: Path,
+    model_identities: set[str],
+    *,
+    dialect: str = "duckdb",
+    with_dbt_deps: bool = True,
+    with_sql_visible_hop: bool = True,
+) -> frozenset[str]:
+    """Resolve qualified identities to uids and return their union closure."""
+    payload = json.loads(full_manifest_path.read_text(encoding="utf-8"))
+    nodes = payload.get("nodes", {})
+    if not isinstance(nodes, dict):
+        raise LineageInputError(
+            f"Manifest missing nodes object: {full_manifest_path}"
+        )
+    if not model_identities:
+        raise LineageInputError(
+            "manifest_model_closure_for_identities requires model names."
+        )
+
+    uid_by_identity = _resolve_manifest_model_uids(nodes, model_identities)
+    included: set[str] = set()
+    for uid in uid_by_identity.values():
+        closure = manifest_model_closure(
+            full_manifest_path,
+            frozenset({uid}),
+            dialect=dialect,
+            with_dbt_deps=with_dbt_deps,
+            with_sql_visible_hop=with_sql_visible_hop,
+        )
+        included.update(closure)
+    return frozenset(included)
+
+
+def slice_intersect_build_scope(
+    *,
+    full_manifest_path: Path,
+    slice_manifest_path: Path,
+    target_models: Sequence[str],
+    dialect: str,
+) -> frozenset[str]:
+    """Local model names required to build lineage for targets within a manifest slice."""
+    if not target_models:
+        raise LineageInputError("slice_intersect_build_scope requires target_models.")
+
+    slice_project = load_project(slice_manifest_path, dialect=dialect)
+    slice_names = set(slice_project.datasets.keys())
+    missing_targets = sorted(
+        model_name for model_name in target_models if model_name not in slice_names
+    )
+    if missing_targets:
+        raise LineageInputError(
+            "Target models missing from slice manifest "
+            f"{slice_manifest_path}: {missing_targets}"
+        )
+
+    closure_uids = manifest_model_closure_for_identities(
+        full_manifest_path,
+        set(target_models),
+        dialect=dialect,
+        with_dbt_deps=True,
+        with_sql_visible_hop=True,
+    )
+
+    payload = json.loads(full_manifest_path.read_text(encoding="utf-8"))
+    nodes = payload.get("nodes", {})
+    if not isinstance(nodes, dict):
+        raise LineageInputError(
+            f"Full manifest missing nodes object: {full_manifest_path}"
+        )
+
+    closure_identities: set[str] = set()
+    for uid in closure_uids:
+        node = nodes.get(uid)
+        if not isinstance(node, dict):
+            raise LineageInputError(
+                f"Closure uid {uid!r} missing from full manifest {full_manifest_path}."
+            )
+        closure_identities.add(resolve_dbt_dataset_identity(node))
+
+    build_scope = frozenset(closure_identities & slice_names)
+    missing_build = sorted(
+        model_name for model_name in target_models if model_name not in build_scope
+    )
+    if missing_build:
+        raise LineageInputError(
+            "Manifest closure did not include all target models in slice build scope: "
+            f"{missing_build}"
+        )
+    if not build_scope:
+        raise LineageInputError(
+            "Slice build scope is empty after manifest intersection."
+        )
+    return build_scope
+
+
+def union_build_scope_for_targets(
+    project: ProjectInput,
+    *,
+    full_manifest_path: Path,
+    slice_manifest_path: Path,
+    target_models: Sequence[str],
+    dialect: str,
+) -> frozenset[str]:
+    """Dependency-closed union of per-target slice build scopes."""
+    seeds: set[str] = set()
+    for target in target_models:
+        seeds.update(
+            slice_intersect_build_scope(
+                full_manifest_path=full_manifest_path,
+                slice_manifest_path=slice_manifest_path,
+                target_models=[target],
+                dialect=dialect,
+            )
+        )
+    return transitive_local_dependencies(project, seeds=frozenset(seeds))

@@ -6,6 +6,8 @@ from pathlib import Path
 
 from clearmetric.core import TraversalResult, table_id
 from clearmetric.core.models import CatalogArtifact, Warning
+from clearmetric.core.project import load_project_config
+from clearmetric.core.validate import load_artifact_file
 from clearmetric.graph import (
     TraversalDirection,
     trace_downstream_from_artifact,
@@ -113,6 +115,77 @@ def _filter_traversal_by_identity(
     return result.model_copy(update={"related_ids": filtered_ids})
 
 
+def _finalize_impact_result(
+    artifact: CatalogArtifact,
+    result: TraversalResult,
+) -> TraversalResult:
+    envelope = resolver_completeness_envelope(artifact, tuple(result.related_ids))
+    if (
+        envelope["resolver_completeness"] == "partial"
+        and not envelope["blocking_findings"]
+    ):
+        envelope["blocking_findings"] = ["partial_lineage_without_blockers"]
+
+    warnings: list[Warning] = []
+    if envelope["resolver_completeness"] != "complete":
+        warnings.append(
+            Warning(
+                code="partial_lineage_impact",
+                message=(
+                    "Impact traversal crosses models with incomplete lineage resolution: "
+                    f"{envelope['resolver_statuses']}"
+                ),
+                subject_id=result.selection_id,
+            )
+        )
+
+    return result.model_copy(
+        update={
+            "resolver_completeness": envelope["resolver_completeness"],
+            "unknown_edges_possible": envelope["unknown_edges_possible"],
+            "blocking_findings": envelope["blocking_findings"],
+            "warnings": [*result.warnings, *warnings],
+        }
+    )
+
+
+def impact_from_artifact(
+    artifact_path: Path,
+    project_dir: Path,
+    *,
+    selection: str,
+    direction: TraversalDirection,
+    identity: str | None = None,
+) -> tuple[CompiledGraph, TraversalResult]:
+    """Trace lineage impact using a persisted CatalogArtifact (no compile)."""
+    root = project_dir.expanduser().resolve()
+    project = load_project_config(root)
+    artifact = load_artifact_file(artifact_path.expanduser().resolve())
+
+    if direction == "upstream":
+        result = trace_upstream_from_artifact(artifact, selection=selection)
+    else:
+        result = trace_downstream_from_artifact(artifact, selection=selection)
+
+    if identity is not None:
+        identity = require_gated_identity(identity)
+        result = _filter_traversal_by_identity(
+            result,
+            artifact,
+            identity=identity,
+            rules_path=project.policy.rules,
+        )
+
+    result = _finalize_impact_result(artifact, result)
+    compiled = CompiledGraph(
+        artifact=artifact,
+        project=project,
+        project_dir=root,
+        sources_run=[],
+    )
+    return compiled, result
+
+
 def impact(
     project_dir: Path,
     *,
@@ -138,33 +211,5 @@ def impact(
             rules_path=compiled.project.policy.rules,
         )
 
-    envelope = resolver_completeness_envelope(artifact, tuple(result.related_ids))
-    if (
-        envelope["resolver_completeness"] == "partial"
-        and not envelope["blocking_findings"]
-    ):
-        envelope["blocking_findings"] = ["partial_lineage_without_blockers"]
-
-    warnings: list[Warning] = []
-    if envelope["resolver_completeness"] != "complete":
-        warnings.append(
-            Warning(
-                code="partial_lineage_impact",
-                message=(
-                    "Impact traversal crosses models with incomplete lineage resolution: "
-                    f"{envelope['resolver_statuses']}"
-                ),
-                subject_id=result.selection_id,
-            )
-        )
-
-    result = result.model_copy(
-        update={
-            "resolver_completeness": envelope["resolver_completeness"],
-            "unknown_edges_possible": envelope["unknown_edges_possible"],
-            "blocking_findings": envelope["blocking_findings"],
-            "warnings": [*result.warnings, *warnings],
-        }
-    )
-
+    result = _finalize_impact_result(artifact, result)
     return compiled, result

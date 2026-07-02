@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## 0.9.4 - 2026-07-02
+
+### Added
+
+- **Scoped lineage cache** — `build_scoped_lineage_cached()` with engine fingerprint and `CLEARMETRIC_LINEAGE_CACHE_DIR` for incremental corpus/harness builds
+- **Project subsetting** — `subset_project()`, `transitive_local_dependencies()`, and `union_build_scope_for_targets()` for closed local dependency scopes
+- **Impact from artifact** — `impact_from_artifact()` and `cm impact --artifact` to trace impact without recompiling
+- **Union branch lineage** — outer-union first-branch ref resolution and CTE ref expansion in the SQL analyzer
+
+### Changed
+
+- **Lineage build** — richer union/CTE column lineage, derived audit column supplements, and scoped progress callbacks
+- **Docs** — orchestration guide for persisted compile + artifact impact and private corpus measurement workflow
+
 ## 0.9.3 - 2026-07-02
 
 ### Added

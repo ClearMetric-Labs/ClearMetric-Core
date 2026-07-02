@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
+import os
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Callable, Literal
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Literal
 
+import yaml
 from clearmetric.core import (
     CanonicalIdError,
     CatalogArtifact,
@@ -15,9 +22,11 @@ from clearmetric.core import (
     Warning,
     column_id,
     leaf_name,
+    load_artifact_file,
     merge,
     normalize_identifier,
     normalize_identifier_part,
+    render_json,
     schema_name,
     split_qualified_identifier,
     table_id,
@@ -29,7 +38,12 @@ from sqlglot.lineage import Node as SqlglotLineageNode
 
 from .coverage import EXPANDED_STAR_CODE
 from .errors import LineageContractError, LineageInputError
-from .loaders import ProjectDataset, ProjectInput, dbt_aspect_for_dataset
+from .loaders import (
+    ProjectDataset,
+    ProjectInput,
+    dbt_aspect_for_dataset,
+    subset_project,
+)
 from .models import LineageMap, LineageSummary
 from .output_columns import infer_output_columns
 from .resolver_status import (
@@ -44,8 +58,13 @@ from .schema_registry import (
     SchemaRegistry,
 )
 from .sql_analyzer import (
+    SqlStatementAnalysis,
     StarExpansionPolicy,
+    _cte_select_body,
+    _nested_case_expressions,
     _outer_select,
+    _projection_source_column_names,
+    _select_expression_for_output,
     _shadowed_outer_select_aliases,
     _single_bare_star_source_relation,
     _unwrap_alias,
@@ -63,6 +82,7 @@ from .sql_analyzer import (
     lineage_output_map,
     macro_union_schema_branch_refs_index,
     mixed_explicit_and_star_outer_select,
+    outer_union_cte_first_branch_refs,
     qualified_star_alias_keys,
     quoted_alias_output_columns,
     resolve_star_suppressed_column_upstream,
@@ -141,8 +161,9 @@ def build_catalog_artifact_from_project(
     project: ProjectInput,
     *,
     dialect: str,
+    progress: Callable[[int, int, str], None] | None = None,
 ) -> CatalogArtifact:
-    return _build_lineage(project, dialect=dialect).artifact
+    return _build_lineage(project, dialect=dialect, progress=progress).artifact
 
 
 def build_lineage_map_from_project(
@@ -191,6 +212,112 @@ def edges_by_model_from_project(
     progress: Callable[[int, int, str], None] | None = None,
 ) -> dict[str, ModelLineageResult]:
     return _run_topo_lineage(project, dialect=dialect, progress=progress).per_model
+
+
+def edges_by_model_from_artifact(
+    artifact: CatalogArtifact,
+) -> dict[str, frozenset[tuple[str, str, str, str]]]:
+    """Group normalized derives_from edges by downstream model name."""
+    per_model: dict[str, set[tuple[str, str, str, str]]] = {}
+    for edge in _normalize_derives_from_edges(artifact.edges):
+        per_model.setdefault(edge[2], set()).add(edge)
+    return {model: frozenset(edges) for model, edges in per_model.items()}
+
+
+def _file_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def lineage_engine_fingerprint(*, input_paths: Sequence[Path] = ()) -> str:
+    """Hash engine modules plus optional caller-supplied input paths."""
+    from . import sql_analyzer as sql_analyzer_module
+
+    parts: list[str] = []
+    for module_path in (__file__, sql_analyzer_module.__file__):
+        if module_path is None:
+            raise LineageContractError("Unable to resolve engine module path.")
+        parts.append(_file_sha256(Path(module_path)))
+    for path in input_paths:
+        parts.append(_file_sha256(path.expanduser().resolve()))
+    return hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()
+
+
+def default_lineage_cache_dir() -> Path:
+    env = os.environ.get("CLEARMETRIC_LINEAGE_CACHE_DIR", "").strip()
+    if env:
+        return Path(env).expanduser()
+    return Path("_lineage_build_cache")
+
+
+def _scoped_cache_paths(
+    cache_dir: Path,
+    *,
+    fingerprint: str,
+    scope_models: frozenset[str],
+) -> tuple[str, Path, Path]:
+    scope_key = "|".join(sorted(scope_models))
+    cache_key = hashlib.sha256(
+        f"{fingerprint}|{scope_key}".encode("utf-8")
+    ).hexdigest()
+    return (
+        cache_key,
+        cache_dir / f"{cache_key}.json",
+        cache_dir / f"{cache_key}.meta.yaml",
+    )
+
+
+def build_scoped_lineage_cached(
+    project: ProjectInput,
+    scope_models: frozenset[str],
+    cache_dir: Path,
+    *,
+    dialect: str,
+    fingerprint: str,
+    force: bool = False,
+    progress: Callable[[int, int, str], None] | None = None,
+) -> tuple[CatalogArtifact, dict[str, frozenset[tuple[str, str, str, str]]]]:
+    """Build or load a scoped CatalogArtifact keyed by fingerprint + scope."""
+    cache_key, artifact_path, meta_path = _scoped_cache_paths(
+        cache_dir,
+        fingerprint=fingerprint,
+        scope_models=scope_models,
+    )
+    if meta_path.is_file() and artifact_path.is_file() and not force:
+        meta = yaml.safe_load(meta_path.read_text(encoding="utf-8"))
+        if not isinstance(meta, dict):
+            raise LineageContractError(f"Invalid lineage cache meta: {meta_path}")
+        if meta.get("fingerprint") != fingerprint:
+            raise LineageContractError(
+                f"Lineage cache stale for fingerprint {fingerprint!r}: {meta_path}. "
+                "Rerun with --force."
+            )
+        if frozenset(meta.get("scope_models") or []) != scope_models:
+            raise LineageContractError(
+                f"Lineage cache scope mismatch: {meta_path}. Rerun with --force."
+            )
+        artifact = load_artifact_file(artifact_path)
+        return artifact, edges_by_model_from_artifact(artifact)
+
+    scoped_project = subset_project(project, scope_models)
+    artifact = build_catalog_artifact_from_project(
+        scoped_project,
+        dialect=dialect,
+        progress=progress,
+    )
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    artifact_path.write_text(
+        json.dumps(render_json(artifact), indent=2, sort_keys=False),
+        encoding="utf-8",
+    )
+    meta = {
+        "fingerprint": fingerprint,
+        "cache_key": cache_key,
+        "scope_models": sorted(scope_models),
+        "build_scope_local_models": len(scope_models),
+        "written_at": datetime.now(tz=UTC).isoformat(),
+    }
+    meta_path.write_text(yaml.safe_dump(meta, sort_keys=False), encoding="utf-8")
+    return artifact, edges_by_model_from_artifact(artifact)
 
 
 def _normalize_derives_from_edges(
@@ -453,8 +580,13 @@ def _emit_type_coverage_warnings(
         )
 
 
-def _build_lineage(project: ProjectInput, *, dialect: str) -> BuiltLineage:
-    topo = _run_topo_lineage(project, dialect=dialect)
+def _build_lineage(
+    project: ProjectInput,
+    *,
+    dialect: str,
+    progress: Callable[[int, int, str], None] | None = None,
+) -> BuiltLineage:
+    topo = _run_topo_lineage(project, dialect=dialect, progress=progress)
     nodes_by_id = topo.nodes_by_id
     edges = topo.edges
     warnings = topo.warnings
@@ -1078,7 +1210,10 @@ def _canonical_upstream_relation_id(
         return outcome.relation_id
     resolved_key = normalize_identifier_part(resolved)
     if resolved in cte_names or resolved_key in cte_names:
-        return normalize_identifier(resolved_key)
+        dataset_key = normalize_identifier(resolved)
+        if dataset_key in project.datasets:
+            return dataset_key
+        return None
 
     parent_key = normalize_identifier_part(parent_name)
     normalized_refs = {
@@ -1103,6 +1238,75 @@ def _canonical_upstream_relation_id(
     if relation_fqn_lookup_keys(resolved_norm) & normalized_refs:
         return resolved_norm
     return None
+
+
+def _resolve_ref_to_mapped_edges(
+    leaf_ref: str,
+    *,
+    output_name: str,
+    dataset_name: str,
+    statement_analysis: SqlStatementAnalysis | None,
+    project: ProjectInput,
+    alias_map: dict[str, str],
+    table_references: tuple[str, ...] | frozenset[str],
+    cte_names: set[str] | frozenset[str],
+    registry: SchemaRegistry,
+) -> set[tuple[str, str, str, str]]:
+    """Expand a qualified ref into concrete upstream edges, walking CTE projections."""
+    parsed = _try_split_ref(leaf_ref)
+    if parsed is None:
+        return set()
+    parent_name, source_column = parsed
+    parent_key = normalize_identifier_part(parent_name)
+    if (
+        parent_key in cte_names
+        and statement_analysis is not None
+    ):
+        cte_select = _cte_select_body(parent_key, analysis=statement_analysis)
+        if cte_select is not None:
+            expression = _select_expression_for_output(cte_select, source_column)
+            if expression is not None:
+                mapped: set[tuple[str, str, str, str]] = set()
+                for relation, column in expression_column_refs(
+                    _unwrap_alias(expression),
+                    analysis=statement_analysis,
+                    select=cte_select,
+                ):
+                    canonical = _canonical_upstream_relation_id(
+                        relation,
+                        project=project,
+                        alias_map=alias_map,
+                        table_references=table_references,
+                        cte_names=cte_names,
+                        registry=registry,
+                    )
+                    if canonical is None:
+                        continue
+                    canonical_key = normalize_identifier_part(canonical)
+                    if (
+                        canonical_key in cte_names
+                        and canonical not in project.datasets
+                    ):
+                        continue
+                    mapped.add(
+                        (canonical, column, dataset_name, output_name),
+                    )
+                if mapped:
+                    return mapped
+    canonical = _canonical_upstream_relation_id(
+        parent_name,
+        project=project,
+        alias_map=alias_map,
+        table_references=table_references,
+        cte_names=cte_names,
+        registry=registry,
+    )
+    if canonical is None:
+        return set()
+    canonical_key = normalize_identifier_part(canonical)
+    if canonical_key in cte_names and canonical not in project.datasets:
+        return set()
+    return {(canonical, source_column, dataset_name, output_name)}
 
 
 def _resolved_ref_parent_names(
@@ -1363,6 +1567,28 @@ def _resolvable_union_branch_refs(
     return resolvable
 
 
+def _union_output_prefers_first_branch_only(
+    output_name: str,
+    *,
+    analysis: SqlStatementAnalysis | None,
+) -> bool:
+    """True when union sibling refs should collapse to the first branch only."""
+    if analysis is None:
+        return True
+    outer = _outer_select(analysis.statement)
+    if not isinstance(outer, exp.Select):
+        return True
+    expression = _select_expression_for_output(outer, output_name)
+    if expression is None:
+        return True
+    unwrapped = _unwrap_alias(expression)
+    if isinstance(unwrapped, exp.Column):
+        return normalize_identifier_part(unwrapped.name or "") != normalize_identifier_part(
+            output_name
+        )
+    return True
+
+
 def _collect_union_branch_upstream_refs(
     *,
     output_name: str,
@@ -1389,7 +1615,28 @@ def _collect_union_branch_upstream_refs(
         lineage_schema=lineage_schema,
         dialect=dialect,
         unqualified_lineage_map=unqualified_lineage_map,
+        statement_analysis=statement_analysis,
     )
+    if (
+        statement_analysis is not None
+        and len(sqlglot_branch_refs) > 1
+        and _union_output_prefers_first_branch_only(
+            output_name,
+            analysis=statement_analysis,
+        )
+    ):
+        parent_aliases: set[str] = set()
+        for ref in sqlglot_branch_refs:
+            parsed = _try_split_ref(ref)
+            if parsed is not None:
+                parent_aliases.add(normalize_identifier_part(parsed[0]))
+        if len(parent_aliases) > 1:
+            first_branch_refs = outer_union_cte_first_branch_refs(
+                output_name,
+                analysis=statement_analysis,
+            )
+            if first_branch_refs:
+                sqlglot_branch_refs = first_branch_refs
 
     def resolve_canonical_parent(base_relation: str) -> str | None:
         return _canonical_upstream_relation_id(
@@ -1419,6 +1666,20 @@ def _collect_union_branch_upstream_refs(
     )
 
 
+def _lineage_root_for_output(
+    lineage_map: dict[str, SqlglotLineageNode],
+    output_name: str,
+) -> SqlglotLineageNode | None:
+    """Return a lineage root keyed by exact or normalized output column name."""
+    if output_name in lineage_map:
+        return lineage_map[output_name]
+    target = normalize_identifier_part(output_name)
+    for key, root in lineage_map.items():
+        if normalize_identifier_part(key) == target:
+            return root
+    return None
+
+
 def _collect_union_branch_refs(
     *,
     output_name: str,
@@ -1430,28 +1691,33 @@ def _collect_union_branch_refs(
     lineage_schema: dict[str, dict[str, str]],
     dialect: str,
     unqualified_lineage_map: dict[str, SqlglotLineageNode] | None = None,
+    statement_analysis: SqlStatementAnalysis | None = None,
 ) -> set[str]:
     """Collect per-branch upstream refs for UNION outputs using unqualified lineage."""
     sql = dataset.sql
     if not sql:
         return set()
     if unqualified_lineage_map is not None:
-        unqualified_root = unqualified_lineage_map.get(output_name)
+        unqualified_root = _lineage_root_for_output(
+            unqualified_lineage_map,
+            output_name,
+        )
     else:
         try:
-            unqualified_root = lineage_output_map(
+            fallback_map = lineage_output_map(
                 sql,
                 schema=lineage_schema,
                 sources=None,
                 dialect=dialect,
-            ).get(output_name)
+            )
         except LineageInputError:
             return set()
+        unqualified_root = _lineage_root_for_output(fallback_map, output_name)
     if unqualified_root is None:
         return set()
-    union_refs: set[str] = set()
+    branch_sets: list[set[str]] = []
     for child in unqualified_root.downstream:
-        union_refs.update(
+        branch_sets.append(
             _refs_from_lineage_subtree(
                 child,
                 project=project,
@@ -1462,6 +1728,20 @@ def _collect_union_branch_refs(
                 preserve_cte_scope=True,
             )
         )
+    if len(branch_sets) > 1 and all(branch_sets):
+        if statement_analysis is not None and not _union_output_prefers_first_branch_only(
+            output_name,
+            analysis=statement_analysis,
+        ):
+            union_refs = set()
+            for refs in branch_sets:
+                union_refs.update(refs)
+        else:
+            union_refs = branch_sets[0]
+    else:
+        union_refs = set()
+        for refs in branch_sets:
+            union_refs.update(refs)
     return _remap_root_sources_to_local_deps(
         union_refs,
         project=project,
@@ -1469,6 +1749,158 @@ def _collect_union_branch_refs(
         known_relation_names=known_relation_names,
         schema=lineage_schema,
     )
+
+
+def _restrict_mapped_edges_for_outer_union_first_branch(
+    mapped: set[tuple[str, str, str, str]],
+    *,
+    output_name: str,
+    root: SqlglotLineageNode,
+    analysis: SqlStatementAnalysis,
+    project: ProjectInput,
+    alias_map: dict[str, str],
+    table_references: tuple[str, ...] | frozenset[str],
+    cte_names: set[str] | frozenset[str],
+    registry: SchemaRegistry,
+) -> set[tuple[str, str, str, str]]:
+    """Prefer outer UNION CTE first-branch upstreams when siblings disagree."""
+    if len({edge[0] for edge in mapped}) <= 1:
+        return mapped
+    if all(edge[1] == edge[3] for edge in mapped):
+        return mapped
+    first_parents: set[str] = set()
+    first_refs = outer_union_cte_first_branch_refs(output_name, analysis=analysis)
+    if first_refs:
+        expanded = _expand_union_branch_cte_refs(
+            first_refs,
+            statement_analysis=analysis,
+            project=project,
+            alias_map=alias_map,
+            table_references=table_references,
+            cte_names=cte_names,
+            registry=registry,
+        )
+        for ref in expanded:
+            parsed = _try_split_ref(ref)
+            if parsed is None:
+                continue
+            parent_name, _column_name = parsed
+            canonical = _canonical_upstream_relation_id(
+                parent_name,
+                project=project,
+                alias_map=alias_map,
+                table_references=table_references,
+                cte_names=cte_names,
+                registry=registry,
+            )
+            if canonical is not None:
+                first_parents.add(canonical)
+    if not first_parents:
+        outer = _outer_select(analysis.statement)
+        if isinstance(outer, exp.Select):
+            from_clause = outer.args.get("from_") or outer.args.get("from")
+            if from_clause is not None:
+                tables = [
+                    table
+                    for table in from_clause.find_all(exp.Table)
+                    if isinstance(table, exp.Table)
+                ]
+                if len(tables) == 1:
+                    cte_name = normalize_identifier_part(tables[0].name or "")
+                    if cte_name in analysis.cte_names:
+                        base = cte_single_source_base_relation(
+                            cte_name,
+                            analysis=analysis,
+                        )
+                        if base is not None:
+                            canonical = _canonical_upstream_relation_id(
+                                base,
+                                project=project,
+                                alias_map=alias_map,
+                                table_references=table_references,
+                                cte_names=cte_names,
+                                registry=registry,
+                            )
+                            if canonical is not None:
+                                first_parents.add(canonical)
+    if len(first_parents) != 1:
+        return mapped
+    outer = _outer_select(analysis.statement)
+    defining_expression = (
+        _select_expression_for_output(outer, output_name)
+        if isinstance(outer, exp.Select)
+        else None
+    )
+    if defining_expression is None:
+        defining_expression = root.expression
+    if defining_expression is not None:
+        unwrapped = _unwrap_alias(defining_expression)
+        if isinstance(unwrapped, exp.Column):
+            table = unwrapped.args.get("table")
+            if isinstance(table, exp.Identifier):
+                relation_name = normalize_identifier_part(table.this)
+                cte_name = relation_name
+                if cte_name not in analysis.cte_names:
+                    mapped_relation = alias_map.get(relation_name, relation_name)
+                    cte_name = normalize_identifier_part(mapped_relation)
+                if cte_name in analysis.cte_names:
+                    cte_select = _cte_select_body(cte_name, analysis=analysis)
+                    column_name = normalize_identifier_part(unwrapped.name or output_name)
+                    if cte_select is not None:
+                        cte_expression = _select_expression_for_output(
+                            cte_select,
+                            column_name,
+                        )
+                        if cte_expression is not None and not isinstance(
+                            _unwrap_alias(cte_expression),
+                            exp.Column,
+                        ):
+                            return mapped
+        if not isinstance(unwrapped, exp.Column):
+            return mapped
+        if _nested_case_expressions(unwrapped):
+            return mapped
+    return {edge for edge in mapped if edge[0] in first_parents}
+
+
+def _derived_audit_column_supplement(
+    selected_refs: set[str],
+    *,
+    root: SqlglotLineageNode,
+    analysis: SqlStatementAnalysis,
+) -> set[str]:
+    """Add expression leaf columns alongside passthrough union-branch refs."""
+    if root.expression is None:
+        return selected_refs
+    expression = _unwrap_alias(root.expression)
+    if isinstance(expression, exp.Column):
+        return selected_refs
+    outer = _outer_select(analysis.statement)
+    leaf_columns: set[str] = set()
+    for _relation, name in expression_column_refs(
+        expression,
+        analysis=analysis,
+        select=outer if isinstance(outer, exp.Select) else None,
+    ):
+        direct = normalize_identifier_part(name)
+        projected = _projection_source_column_names(name, analysis=analysis)
+        if projected:
+            leaf_columns.update(projected)
+        else:
+            leaf_columns.add(direct)
+    if not leaf_columns:
+        return selected_refs
+    supplemented = set(selected_refs)
+    for ref in selected_refs:
+        parsed = _try_split_ref(ref)
+        if parsed is None:
+            continue
+        parent, column = parsed
+        column_key = normalize_identifier_part(column)
+        for leaf_column in leaf_columns:
+            if leaf_column != column_key:
+                supplemented.add(normalize_identifier(f"{parent}.{leaf_column}"))
+    return supplemented
 
 
 def _resolve_output_column_lineage(
@@ -1751,6 +2183,15 @@ def _resolve_output_column_lineage(
                 cte_local_aliases=cte_local_aliases,
             )
         selected_refs = filtered_refs
+        if (
+            ref_strategy == "union_branches"
+            and statement_analysis is not None
+        ):
+            selected_refs = _derived_audit_column_supplement(
+                set(selected_refs),
+                root=root,
+                analysis=statement_analysis,
+            )
 
     post_filter_refs = frozenset(selected_refs)
 
@@ -1827,6 +2268,31 @@ def _resolve_output_column_lineage(
         if parsed_ref is None:
             continue
         parent_name, source_column = parsed_ref
+        parent_key = normalize_identifier_part(parent_name)
+        if (
+            parent_key in cte_name_set
+            and statement_analysis is not None
+            and cte_projected_column_is_literal(
+                parent_key,
+                source_column,
+                analysis=statement_analysis,
+            )
+        ):
+            continue
+        ref_edges = _resolve_ref_to_mapped_edges(
+            leaf_ref,
+            output_name=output_name,
+            dataset_name=dataset.name,
+            statement_analysis=statement_analysis,
+            project=project,
+            alias_map=alias_map,
+            table_references=table_references,
+            cte_names=cte_name_set,
+            registry=registry,
+        )
+        if ref_edges:
+            mapped.update(ref_edges)
+            continue
         if not _parent_is_resolvable(
             parent_name,
             project=project,
@@ -1837,60 +2303,7 @@ def _resolve_output_column_lineage(
             cte_names=cte_name_set,
             registry=registry,
         ):
-            return ColumnLineageResolution(
-                output_column=output_name,
-                ref_selection_strategy=ref_strategy,
-                pre_filter_refs=pre_filter_refs,
-                post_filter_refs=post_filter_refs,
-                mapped_edges=empty,
-                star_suppressed=False,
-                warning_code="unresolved_output_source",
-                cte_chain=cte_chain,
-                cte_local_aliases=cte_local_aliases,
-                warning_message=(
-                    f"Lineage resolved relation alias {parent_name!r} instead of a "
-                    "concrete upstream dataset for output column "
-                    f"{dataset.name}.{output_name}."
-                ),
-            )
-        canonical_parent = _canonical_upstream_relation_id(
-            parent_name,
-            project=project,
-            alias_map=alias_map,
-            table_references=table_references,
-            cte_names=cte_name_set,
-            registry=registry,
-        )
-        if canonical_parent is None:
-            return ColumnLineageResolution(
-                output_column=output_name,
-                ref_selection_strategy=ref_strategy,
-                pre_filter_refs=pre_filter_refs,
-                post_filter_refs=post_filter_refs,
-                mapped_edges=empty,
-                star_suppressed=False,
-                warning_code="unresolved_output_source",
-                cte_chain=cte_chain,
-                cte_local_aliases=cte_local_aliases,
-                warning_message=(
-                    f"Unable to resolve upstream relation for output column "
-                    f"{dataset.name}.{output_name} from parent {parent_name!r}."
-                ),
-            )
-        cte_key = normalize_identifier_part(canonical_parent)
-        if (
-            cte_key in cte_name_set
-            and statement_analysis is not None
-            and cte_projected_column_is_literal(
-                cte_key,
-                source_column,
-                analysis=statement_analysis,
-            )
-        ):
             continue
-        mapped.add(
-            (canonical_parent, source_column, dataset.name, output_name),
-        )
 
     if (
         not mapped
@@ -1905,41 +2318,32 @@ def _resolve_output_column_lineage(
                 analysis=statement_analysis,
                 select=outer if isinstance(outer, exp.Select) else None,
             ):
-                if not _parent_is_resolvable(
-                    relation,
-                    project=project,
-                    alias_map=alias_map,
-                    schema=lineage_schema,
-                    known_relation_names=known_relation_names,
-                    table_references=table_references,
-                    cte_names=cte_name_set,
-                    registry=registry,
-                ):
-                    continue
-                canonical_parent = _canonical_upstream_relation_id(
-                    relation,
-                    project=project,
-                    alias_map=alias_map,
-                    table_references=table_references,
-                    cte_names=cte_name_set,
-                    registry=registry,
-                )
-                if canonical_parent is None:
-                    continue
-                cte_key = normalize_identifier_part(canonical_parent)
-                if (
-                    cte_key in cte_name_set
-                    and statement_analysis is not None
-                    and cte_projected_column_is_literal(
-                        cte_key,
-                        source_column,
-                        analysis=statement_analysis,
+                ref = normalize_identifier(f"{relation}.{source_column}")
+                mapped.update(
+                    _resolve_ref_to_mapped_edges(
+                        ref,
+                        output_name=output_name,
+                        dataset_name=dataset.name,
+                        statement_analysis=statement_analysis,
+                        project=project,
+                        alias_map=alias_map,
+                        table_references=table_references,
+                        cte_names=cte_name_set,
+                        registry=registry,
                     )
-                ):
-                    continue
-                mapped.add(
-                    (canonical_parent, source_column, dataset.name, output_name),
                 )
+
+    mapped = _restrict_mapped_edges_for_outer_union_first_branch(
+        mapped,
+        output_name=output_name,
+        root=root,
+        analysis=statement_analysis,
+        project=project,
+        alias_map=alias_map,
+        table_references=table_references,
+        cte_names=cte_name_set,
+        registry=registry,
+    )
 
     if not mapped:
         return ColumnLineageResolution(
