@@ -60,6 +60,25 @@ warnings track SQL category, not original `adv_NN` phrasing.
 | `union_all_branches` | **R7** guard — union model → 0 edges + `unresolved_lineage` |
 | `select_star_no_schema` | Different path — no schema → `unresolved_star_source`; guards unresolved-star, not schema-known R6 |
 
+## Seed checklist fixtures (`seed/*`)
+
+Committed CI fixtures for the corpus.example 10-item checklist. Gaps are new fixtures under `seed/`; items already covered by adversarial fixtures are mapped below instead of duplicated.
+
+| Checklist item | Seed fixture | Adversarial equivalent |
+|---|---|---|
+| Direct select | `seed/direct_select` | — |
+| Alias | — | `adversarial/dialect_postgres` |
+| CTE | — | `adversarial/cte_column_realias`, `nested_cte` |
+| Join qualified | — | `adversarial/subquery_select` |
+| Join unqualified | — | `adversarial/ambiguous_join_column` |
+| Single-relation `SELECT *` | — | `adversarial/select_star_with_schema` |
+| Multi-relation `SELECT *` | — | `adversarial/select_star_no_schema`, `table_star_alias` |
+| dbt ref chain | `seed/ref_chain` | — |
+| Missing type partial | `seed/missing_type_partial` | — |
+| `must_not` overproduction guard | `seed/must_not_guard` | — |
+
+Every seed fixture with false-positive risk includes `must_not_edges.yaml`. Run with `pytest tests/lineage/test_seed_fixtures.py`.
+
 ## Production manifest contract
 
 Manifest-based fixtures must include enough schema metadata for star-heavy compiled SQL:

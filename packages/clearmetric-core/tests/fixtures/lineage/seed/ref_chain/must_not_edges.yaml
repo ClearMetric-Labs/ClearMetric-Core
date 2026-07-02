@@ -1,0 +1,3 @@
+derives_from:
+  - [column:downstream.amount, column:raw_orders.amount]
+  - [column:middle.amount, column:raw_orders.amount]

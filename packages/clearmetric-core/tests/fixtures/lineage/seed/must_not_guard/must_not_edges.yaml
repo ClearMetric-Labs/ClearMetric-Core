@@ -1,0 +1,2 @@
+derives_from:
+  - [column:report.customer_id, column:raw_customers.legacy_id]

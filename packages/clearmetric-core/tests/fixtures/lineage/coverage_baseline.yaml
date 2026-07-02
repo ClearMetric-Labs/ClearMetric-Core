@@ -9,22 +9,20 @@ jaffle_shop:
     select_star: 5
 loom_finance:
   total: 10
-  resolved: 0
-  flagged: 4
+  resolved: 4
+  flagged: 0
   source_leaf: 6
   silent: 0
   bogus_source_leaves: 0
-  warning_counts:
-    select_star: 1
+  warning_counts: {}
 loom_marketing:
   total: 11
-  resolved: 0
-  flagged: 4
+  resolved: 4
+  flagged: 0
   source_leaf: 7
   silent: 0
   bogus_source_leaves: 0
-  warning_counts:
-    select_star: 1
+  warning_counts: {}
 shopify:
   total: 436
   resolved: 0
@@ -33,6 +31,7 @@ shopify:
   silent: 0
   bogus_source_leaves: 0
   warning_counts:
+    schema_missing: 12
     select_star: 30
     unresolved_lineage: 2
     unresolved_star_source: 12

@@ -12,10 +12,15 @@
       "database": "db1",
       "compiled_code": "select id from {{ ref('raw_orders') }}",
       "depends_on": {
-        "nodes": ["seed.bind_case.raw_orders"]
+        "nodes": [
+          "seed.bind_case.raw_orders"
+        ]
       },
       "columns": {
-        "id": { "name": "id" }
+        "id": {
+          "name": "id",
+          "data_type": "varchar"
+        }
       }
     },
     "seed.bind_case.raw_orders": {
@@ -25,7 +30,10 @@
       "schema": "public",
       "database": "db1",
       "columns": {
-        "id": { "name": "id" }
+        "id": {
+          "name": "id",
+          "data_type": "varchar"
+        }
       }
     }
   }

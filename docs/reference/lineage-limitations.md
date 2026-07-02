@@ -5,8 +5,96 @@
 ## Corpus and resolver correctness (ongoing)
 
 Resolver correctness is validated by adversarial fixtures under `tests/fixtures/lineage/`,
-oracle tests (`test_value_lineage_oracle.py`), and ground-truth probes (`ground_truth.py`).
-This work runs in parallel with wedge shipping — GraphView consolidation does not replace it.
+oracle tests (`test_value_lineage_oracle.py`), ground-truth probes (`ground_truth.py`),
+and committed seed fixtures (`tests/fixtures/lineage/seed/`).
+
+Optional hand-traced regression against real dbt projects lives in a **private gitignored
+corpus** (see synthetic layout in `corpus.example/cases/example/`). Set
+`CLEARMETRIC_CORPUS_ROOT` to point at that checkout when running the private harness locally.
+Public CI does not depend on corpus data or comparator reports.
+
+DataHub comparison in the private harness is a **comparator only** — it finds candidate
+disagreements but shares sqlglot blind spots and is not ground truth. Comparator buckets
+(`both`, `datahub_only`, …) require **exact whole-model edge-set equality**; per-model
+`overlap` blocks distinguish normalization mismatch from genuine semantic disagreement.
+
+### Value-lineage definition (`derives_from`)
+
+`derives_from` is **value-lineage**: an upstream column’s value must flow into the
+downstream column’s value in the selected expression. Predicate-only references are
+**excluded** unless their value contributes to the output:
+
+| Included | Excluded (comparator noise when DataHub reports them) |
+|---|---|
+| Direct projections, casts, arithmetic on column values | `JOIN … ON` keys used only as predicates |
+| `CASE` result arms sourcing column values | `WHERE` / `HAVING` filter columns |
+| Aggregates over value expressions (`SUM(col)`, …) | Window `PARTITION BY` / `ORDER BY` keys |
+| CTE re-projections of value expressions | Filter-only `CASE WHEN` condition columns |
+
+DataHub edges for predicate-only references are **comparator differences**, not CM
+correctness failures. Hand-traced `lineage_truth` cases in a private corpus are the
+correctness oracle for external projects; comparator reports measure agreement only.
+
+Expression lineage follows the same value-lineage rule:
+
+- literal-only expressions such as `CAST('x' AS TEXT)` do not emit upstream
+  `derives_from` edges;
+- `COALESCE`, string concatenation, hashes, and arithmetic emit component edges
+  only for columns whose values contribute to the output value;
+- CTE aliases are transparent passthroughs when the aliased expression itself is
+  value-lineage-resolvable.
+
+These are CM semantics, not attempts to mirror DataHub's expression choices.
+
+### Typed schema and precedence
+
+Column types flow through `clearmetric.lineage.schema` with explicit precedence:
+
+1. warehouse `INFORMATION_SCHEMA` export (physical truth when bound)
+2. dbt `catalog.json` when present (requires `dbt docs generate`, not plain `dbt compile`)
+3. manifest `data_type` (author declaration, often stale or blank)
+
+Conflicts emit `type_conflict` warnings. Warehouse precedence assumes the export and
+compiled manifest describe compatible snapshots; a stale warehouse export can win over
+branch SQL with a warning but still reflect deployed rather than in-flight schema.
+
+Missing types emit `missing_column_type`; unmapped non-empty types emit
+`unsupported_column_type`. Both exclude columns from the sqlglot schema and mark
+lineage partial rather than inventing `"text"` placeholders.
+
+Intermediate model output schemas propagate downstream in topological build order.
+Cyclic model subgraphs emit `dependency_cycle` warnings and skip sqlglot resolution
+for the cyclic remainder without aborting the whole compile.
+
+### Metrics definitions (public fixtures)
+
+**Primary (hand-traced correctness oracle on committed fixtures):**
+
+- `edge_recall = |cm ∩ expected| / |expected|`
+- `edge_precision = |cm ∩ expected| / |cm|`
+- `exact_model_match` — models where produced edges match expected and no `must_not_edges` appear
+- `unsupported_rate`, `parse_failure_rate`
+
+**Secondary (private comparator only — not correctness):**
+
+- `datahub_agreement = |cm ∩ dh| / |cm ∪ dh|` per model (`overlap.jaccard`)
+- Whole-model bucket counts (`both`, `datahub_only`, …) — strict set equality, not recall
+
+Do **not** treat comparator bucket counts as universal correctness proof.
+
+### Known unsupported / honest partial areas
+
+| Area | Behavior |
+|---|---|
+| Dynamic SQL / invisible macros | partial or failed with warnings |
+| Unmapped warehouse types | `unsupported_column_type`, column excluded from schema |
+| Multi-relation bare `SELECT *` | unsupported unless relation unambiguous |
+| Schema-resolved single-relation `SELECT *` | expands when typed columns cover declared outputs |
+| UNION / quoted outputs | strict R7/R8 — warnings, no invented edges |
+| Dependency cycles | `dependency_cycle`, partial, acyclic portion still resolves |
+| Predicate-only references | excluded from value-lineage by design |
+| Spellbook without warehouse schema | schema-gated; comparator-only |
+
 When coverage changes, update this document honestly.
 
 ## Supported Input
@@ -48,9 +136,9 @@ The current committed test corpus exercises:
 - `snowflake`
 - `bigquery`
 
-The deepest real-project coverage today is on `postgres` and `duckdb`. The
-`snowflake` and `bigquery` checks are adversarial dialect fixtures, not large
-real-project validations.
+The deepest real-project **correctness** coverage today is Tuva on `duckdb` (hand-traced
+`lineage_truth` cases) plus adversarial fixtures on `postgres`. The `snowflake` and
+`bigquery` checks are adversarial dialect fixtures, not large real-project validations.
 
 Folder input is intentionally lighter-weight than dbt manifest input. When a SQL
 folder does not provide root-table schema metadata, `SELECT *` leaves at the
@@ -192,6 +280,7 @@ kind in the future.
 - runtime warehouse-side dependencies outside compiled SQL
 - universal reference lineage for predicate usage
 - universal exact lineage on arbitrary warning-rich compiled SQL
+- column-level correctness on schema-gated corpora without warehouse types
 
 ## Composition rule
 

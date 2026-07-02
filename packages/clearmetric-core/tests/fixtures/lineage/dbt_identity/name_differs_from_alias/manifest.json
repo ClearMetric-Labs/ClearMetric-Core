@@ -12,10 +12,15 @@
       "database": "warehouse",
       "compiled_code": "select id from {{ ref('raw_orders') }}",
       "depends_on": {
-        "nodes": ["seed.alias_case.raw_orders"]
+        "nodes": [
+          "seed.alias_case.raw_orders"
+        ]
       },
       "columns": {
-        "id": { "name": "id" }
+        "id": {
+          "name": "id",
+          "data_type": "varchar"
+        }
       }
     },
     "seed.alias_case.raw_orders": {
@@ -25,7 +30,10 @@
       "schema": "analytics",
       "database": "warehouse",
       "columns": {
-        "id": { "name": "id" }
+        "id": {
+          "name": "id",
+          "data_type": "varchar"
+        }
       }
     }
   }

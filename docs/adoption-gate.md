@@ -8,6 +8,40 @@ The adoption gate blocks **public product claims and production positioning**. I
 
 **Gate: NOT PASSED**
 
+## Resolver program dev directive (non-negotiable)
+
+**Hammer this:** Do not make the resolver look better. Make it **impossible for the
+resolver to be silently wrong.**
+
+The goal is not higher DataHub agreement by itself.
+
+The goal is that every model truthfully reports one of four states:
+
+1. lineage known
+2. lineage partially known with exact blockers
+3. lineage unavailable because schema is missing
+4. lineage unavailable because identity or SQL resolution failed
+
+A model with zero edges and no `resolver_status` is a bug.
+
+A model with zero edges is acceptable only when its `resolver_status`,
+`blocking_findings`, and `unknown_edges_possible` explain why no lineage could be emitted.
+
+A model with partial lineage and no warning in impact output is a bug.
+
+A resolver fix without a new or updated corpus oracle case is incomplete.
+
+Comparator improvement is not accepted unless either:
+
+1. it passes a hand-traced oracle case, or
+2. the report marks the change as `comparator_semantics_only`, with no correctness claim.
+
+**Scope:** Corpus-agnostic — same resolver for Tuva, Spellbook, MRR, attribution, and all
+future corpora. No one-off hacks.
+
+See [lineage-limitations.md](reference/lineage-limitations.md) and
+[current-scope.md](current-scope.md) for consumer freeze during resolver rollout.
+
 ## What the gate blocks (public only)
 
 Until external evidence exists, do **not**:

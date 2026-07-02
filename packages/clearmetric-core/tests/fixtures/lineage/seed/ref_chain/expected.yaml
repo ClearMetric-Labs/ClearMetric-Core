@@ -1,0 +1,16 @@
+dialect: postgres
+mode: exact_edges
+derives_from:
+- - column:downstream.amount
+  - column:middle.amount
+- - column:middle.amount
+  - column:upstream.amount
+- - column:middle.id
+  - column:upstream.id
+- - column:upstream.amount
+  - column:raw_orders.amount
+- - column:upstream.id
+  - column:raw_orders.id
+warnings:
+- dataset: middle
+  code: select_star_expanded

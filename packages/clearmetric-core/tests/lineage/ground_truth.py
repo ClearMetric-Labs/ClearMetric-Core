@@ -16,7 +16,6 @@ from clearmetric.lineage import (
     build_catalog_artifact_from_project,
     load_project,
 )
-
 FIXTURES_ROOT = Path(__file__).resolve().parent.parent / "fixtures" / "lineage"
 
 
@@ -180,7 +179,7 @@ def project_dialects() -> dict[Path, str]:
 def project_fixture_input(root: Path) -> Path:
     """Return manifest.json when present, otherwise the fixture directory."""
     manifest = root / "manifest.json"
-    return manifest if manifest.exists() else root
+    return manifest if manifest.is_file() else root
 
 
 def project_inputs() -> list[tuple[Path, str]]:

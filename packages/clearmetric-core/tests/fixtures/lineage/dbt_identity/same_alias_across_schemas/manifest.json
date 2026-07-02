@@ -11,8 +11,15 @@
       "schema": "schema_a",
       "database": "warehouse",
       "compiled_code": "select 1 as id",
-      "depends_on": { "nodes": [] },
-      "columns": { "id": { "name": "id" } }
+      "depends_on": {
+        "nodes": []
+      },
+      "columns": {
+        "id": {
+          "name": "id",
+          "data_type": "varchar"
+        }
+      }
     },
     "model.cross.orders_b": {
       "resource_type": "model",
@@ -22,8 +29,15 @@
       "schema": "schema_b",
       "database": "warehouse",
       "compiled_code": "select 2 as id",
-      "depends_on": { "nodes": [] },
-      "columns": { "id": { "name": "id" } }
+      "depends_on": {
+        "nodes": []
+      },
+      "columns": {
+        "id": {
+          "name": "id",
+          "data_type": "varchar"
+        }
+      }
     }
   }
 }

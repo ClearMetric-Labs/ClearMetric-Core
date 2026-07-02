@@ -1,0 +1,7 @@
+upstream_repo: local/example
+upstream_sha: n/a
+dialect: postgres
+case_kind: lineage_truth
+model: sql.model
+traced_by: example
+traced_at: 2026-06-29

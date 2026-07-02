@@ -11,13 +11,16 @@
       "unique_id": "source.synthetic.dim_customers",
       "columns": {
         "customer_id": {
-          "name": "customer_id"
+          "name": "customer_id",
+          "data_type": "varchar"
         },
         "customer_name": {
-          "name": "customer_name"
+          "name": "customer_name",
+          "data_type": "varchar"
         },
         "customer_tier": {
-          "name": "customer_tier"
+          "name": "customer_tier",
+          "data_type": "varchar"
         }
       }
     },
@@ -27,16 +30,20 @@
       "unique_id": "seed.synthetic.campaign_events",
       "columns": {
         "event_id": {
-          "name": "event_id"
+          "name": "event_id",
+          "data_type": "varchar"
         },
         "customer_id": {
-          "name": "customer_id"
+          "name": "customer_id",
+          "data_type": "varchar"
         },
         "campaign_channel": {
-          "name": "campaign_channel"
+          "name": "campaign_channel",
+          "data_type": "varchar"
         },
         "clicks": {
-          "name": "clicks"
+          "name": "clicks",
+          "data_type": "varchar"
         }
       }
     },
@@ -53,16 +60,20 @@
       },
       "columns": {
         "customer_id": {
-          "name": "customer_id"
+          "name": "customer_id",
+          "data_type": "varchar"
         },
         "customer_name": {
-          "name": "customer_name"
+          "name": "customer_name",
+          "data_type": "varchar"
         },
         "customer_tier": {
-          "name": "customer_tier"
+          "name": "customer_tier",
+          "data_type": "varchar"
         },
         "total_clicks": {
-          "name": "total_clicks"
+          "name": "total_clicks",
+          "data_type": "varchar"
         }
       }
     }

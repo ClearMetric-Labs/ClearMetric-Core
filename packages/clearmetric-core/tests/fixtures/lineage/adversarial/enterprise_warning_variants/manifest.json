@@ -5,19 +5,24 @@
       "name": "table_a",
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         },
         "status": {
-          "name": "status"
+          "name": "status",
+          "data_type": "varchar"
         },
         "created_at": {
-          "name": "created_at"
+          "name": "created_at",
+          "data_type": "varchar"
         }
       }
     },
@@ -26,19 +31,24 @@
       "name": "table_b",
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         },
         "status": {
-          "name": "status"
+          "name": "status",
+          "data_type": "varchar"
         },
         "region": {
-          "name": "region"
+          "name": "region",
+          "data_type": "varchar"
         }
       }
     },
@@ -53,19 +63,24 @@
       },
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         },
         "status": {
-          "name": "status"
+          "name": "status",
+          "data_type": "varchar"
         },
         "created_at": {
-          "name": "created_at"
+          "name": "created_at",
+          "data_type": "varchar"
         }
       }
     },
@@ -80,19 +95,24 @@
       },
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         },
         "status": {
-          "name": "status"
+          "name": "status",
+          "data_type": "varchar"
         },
         "region": {
-          "name": "region"
+          "name": "region",
+          "data_type": "varchar"
         }
       }
     },
@@ -108,10 +128,12 @@
       },
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         }
       }
     },
@@ -127,13 +149,16 @@
       },
       "columns": {
         "tag": {
-          "name": "tag"
+          "name": "tag",
+          "data_type": "varchar"
         },
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         }
       }
     },
@@ -149,10 +174,12 @@
       },
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         }
       }
     },
@@ -167,10 +194,12 @@
       },
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "cnt": {
-          "name": "cnt"
+          "name": "cnt",
+          "data_type": "varchar"
         }
       }
     },
@@ -185,13 +214,16 @@
       },
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "row_num": {
-          "name": "row_num"
+          "name": "row_num",
+          "data_type": "varchar"
         },
         "running_total": {
-          "name": "running_total"
+          "name": "running_total",
+          "data_type": "varchar"
         }
       }
     },
@@ -206,10 +238,12 @@
       },
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "row_num": {
-          "name": "row_num"
+          "name": "row_num",
+          "data_type": "varchar"
         }
       }
     },
@@ -224,13 +258,16 @@
       },
       "columns": {
         "user_id_out": {
-          "name": "user_id_out"
+          "name": "user_id_out",
+          "data_type": "varchar"
         },
         "amount_out": {
-          "name": "amount_out"
+          "name": "amount_out",
+          "data_type": "varchar"
         },
         "status_out": {
-          "name": "status_out"
+          "name": "status_out",
+          "data_type": "varchar"
         }
       }
     },
@@ -245,13 +282,16 @@
       },
       "columns": {
         "user_id_out": {
-          "name": "user_id_out"
+          "name": "user_id_out",
+          "data_type": "varchar"
         },
         "amount_out": {
-          "name": "amount_out"
+          "name": "amount_out",
+          "data_type": "varchar"
         },
         "status_out": {
-          "name": "status_out"
+          "name": "status_out",
+          "data_type": "varchar"
         }
       }
     },
@@ -266,13 +306,16 @@
       },
       "columns": {
         "user_id_out": {
-          "name": "user_id_out"
+          "name": "user_id_out",
+          "data_type": "varchar"
         },
         "amount_out": {
-          "name": "amount_out"
+          "name": "amount_out",
+          "data_type": "varchar"
         },
         "status_out": {
-          "name": "status_out"
+          "name": "status_out",
+          "data_type": "varchar"
         }
       }
     }

@@ -1,0 +1,5 @@
+dialect: postgres
+mode: exact_edges
+derives_from:
+  - [column:sql.model.customer_id, column:raw_customers.id]
+warnings: []

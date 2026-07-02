@@ -122,3 +122,6 @@ class TraversalResult(BaseModel):
     related_ids: list[str] = Field(default_factory=list)
     traversed_edges: list[Edge] = Field(default_factory=list)
     warnings: list[Warning] = Field(default_factory=list)
+    resolver_completeness: str | None = None
+    unknown_edges_possible: bool | None = None
+    blocking_findings: list[str] = Field(default_factory=list)

@@ -11,7 +11,10 @@
       "database": "warehouse",
       "identifier": "orders",
       "columns": {
-        "id": { "name": "id" }
+        "id": {
+          "name": "id",
+          "data_type": "varchar"
+        }
       }
     }
   },
@@ -24,10 +27,15 @@
       "database": "warehouse",
       "compiled_code": "select id from {{ source('shopify', 'orders') }}",
       "depends_on": {
-        "nodes": ["source.source_case.shopify.orders"]
+        "nodes": [
+          "source.source_case.shopify.orders"
+        ]
       },
       "columns": {
-        "id": { "name": "id" }
+        "id": {
+          "name": "id",
+          "data_type": "varchar"
+        }
       }
     }
   }

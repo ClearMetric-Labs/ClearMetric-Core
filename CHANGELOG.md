@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## 0.9.3 - 2026-07-02
+
+### Added
+
+- **Lineage resolver status** — every compiled table node carries a `lineage_resolution` aspect with `resolver_status`, blocking findings, and `unknown_edges_possible`
+- **Schema propagation** — schema registry, output-column inference, and type-aware column lineage across CTEs and refs
+- **Seed fixtures** — committed oracle cases under `tests/fixtures/lineage/seed/` with expected edges and must-not guards
+- **Corpus template** — `corpus.example/` synthetic case layout for private hand-traced regression
+- **Repository boundaries** — CI guard for gitignored harness/corpus paths and public template scope
+
+### Changed
+
+- **Lineage trust gate** — CI runs the full `tests/lineage` suite plus coverage sweep
+- **sqlglot** — pinned to `30.0.3` for reproducible SQL analysis
+- **Impact output** — schema includes `lineage_resolution` and resolver completeness fields
+- **Docs** — resolver rollout freeze, value-lineage definition, and adoption-gate dev directive
+
 ## 0.9.2 - 2026-06-29
 
 ### Added

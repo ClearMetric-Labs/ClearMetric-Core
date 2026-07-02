@@ -9,10 +9,15 @@
       "name": "report",
       "compiled_code": "select 1 as id",
       "depends_on": {
-        "nodes": ["model.unresolved.missing_model"]
+        "nodes": [
+          "model.unresolved.missing_model"
+        ]
       },
       "columns": {
-        "id": { "name": "id" }
+        "id": {
+          "name": "id",
+          "data_type": "varchar"
+        }
       }
     }
   }

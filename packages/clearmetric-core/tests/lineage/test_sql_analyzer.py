@@ -3,6 +3,7 @@ from __future__ import annotations
 from clearmetric.lineage.sql_analyzer import (
     defining_value_expression,
     filter_value_lineage_refs,
+    lineage_output_map,
 )
 from sqlglot import exp, parse_one
 from sqlglot.lineage import Node as SqlglotLineageNode
@@ -54,10 +55,10 @@ def test_defining_value_expression_follows_cte_projection_to_case():
     select order_payments.credit_card_amount
     from order_payments
     """
-    output_map = lineage(
-        None,
+    output_map = lineage_output_map(
         sql,
         schema={"payments": {"amount": "amount", "payment_method": "payment_method"}},
+        sources=None,
         dialect="postgres",
     )
     root = output_map["credit_card_amount"]

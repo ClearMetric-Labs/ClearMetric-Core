@@ -1,0 +1,22 @@
+{
+  "metadata": {"project_name": "missing_type_partial"},
+  "nodes": {
+    "seed.missing_type_partial.raw_orders": {
+      "resource_type": "seed",
+      "name": "raw_orders",
+      "columns": {
+        "id": {"name": "id", "data_type": "integer"},
+        "amount": {"name": "amount"}
+      }
+    },
+    "model.missing_type_partial.report": {
+      "resource_type": "model",
+      "name": "report",
+      "compiled_path": "compiled/report.sql",
+      "depends_on": {"nodes": ["seed.missing_type_partial.raw_orders"]},
+      "columns": {
+        "amount": {"name": "amount", "data_type": "numeric"}
+      }
+    }
+  }
+}

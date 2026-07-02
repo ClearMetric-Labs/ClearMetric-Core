@@ -11,6 +11,8 @@ probes:
   expected_upstream: []
   expected_downstream: []
   expected_warnings:
+  - code: schema_missing
+    dataset: stg_shopify__order
   - code: select_star
     dataset: stg_shopify__order
 - selection: shopify__customers.lifetime_total_spent

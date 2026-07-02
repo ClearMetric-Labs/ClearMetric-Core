@@ -53,13 +53,14 @@ cm query --identity analyst query:executive_revenue
 Lineage trust gate:
 
 ```bash
-python -m pytest -v \
-  packages/clearmetric-core/tests/lineage/test_corpus_invariants.py \
-  packages/clearmetric-core/tests/lineage/test_ground_truth.py \
-  packages/clearmetric-core/tests/lineage/test_derivation_honesty.py
-PYTHONPATH=packages/clearmetric-core \
+python -m pytest -q packages/clearmetric-core/tests/lineage
+python -m pytest -q tests/test_repository_boundaries.py
+PYTHONPATH=packages/clearmetric-core/src \
   python packages/clearmetric-core/scripts/sweep_lineage_coverage.py
 ```
+
+Hand-traced external corpus validation is private (gitignored `corpus/` and `harness/`). See
+`synthetic case layout in corpus.example/cases/example/`.
 
 Static checks (same as CI):
 

@@ -1,0 +1,22 @@
+{
+  "metadata": {"project_name": "must_not_guard"},
+  "nodes": {
+    "seed.must_not_guard.raw_customers": {
+      "resource_type": "seed",
+      "name": "raw_customers",
+      "columns": {
+        "id": {"name": "id", "data_type": "integer"},
+        "legacy_id": {"name": "legacy_id", "data_type": "integer"}
+      }
+    },
+    "model.must_not_guard.report": {
+      "resource_type": "model",
+      "name": "report",
+      "compiled_path": "compiled/report.sql",
+      "depends_on": {"nodes": ["seed.must_not_guard.raw_customers"]},
+      "columns": {
+        "customer_id": {"name": "customer_id", "data_type": "integer"}
+      }
+    }
+  }
+}

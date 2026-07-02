@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import subprocess
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -147,6 +148,21 @@ def test_projection_does_not_import_evaluate_node():
     source = project_path.read_text(encoding="utf-8")
     assert "evaluate_node" not in source
     assert "gate" in source
+
+
+def test_lineage_build_does_not_import_predicate_diagnostic() -> None:
+    build_path = MODULE_ROOTS["lineage"] / "build.py"
+    tree = ast.parse(build_path.read_text(encoding="utf-8"), filename=str(build_path))
+    imported: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            imported.append(node.module)
+            for alias in node.names:
+                if alias.name == "classify_predicate_usage":
+                    imported.append("classify_predicate_usage")
+    assert "classify_predicate_usage" not in imported
+    source = build_path.read_text(encoding="utf-8")
+    assert "classify_predicate_usage" not in source
 
 
 def test_lineage_build_does_not_define_traversal():
@@ -363,6 +379,56 @@ def test_consumer_viewers_do_not_embed_policy_or_python():
         for banned in _BANNED_CONSUMER_STRINGS:
             if banned in text:
                 violations.append(f"{path}: contains {banned!r}")
+    assert violations == []
+
+
+def test_engine_modules_do_not_import_corpus_paths():
+    banned_fragments = (
+        "corpus.example",
+        "/corpus/",
+        "corpus.cases",
+        "/harness/",
+        "datahub_compare",
+        "corpus_eval",
+        "corpus_oracle",
+        "manifest_slice",
+        "residual_rank",
+        "CLEARMETRIC_CORPUS_ROOT",
+    )
+    violations: list[str] = []
+    for path in SRC_ROOT.rglob("*.py"):
+        text = path.read_text(encoding="utf-8")
+        for fragment in banned_fragments:
+            if fragment in text:
+                violations.append(
+                    f"{path.relative_to(REPO_ROOT)}: references {fragment!r}"
+                )
+    assert violations == []
+
+
+def test_tracked_tree_excludes_harness_and_corpus():
+    tracked = subprocess.check_output(
+        ["git", "ls-files"],
+        cwd=REPO_ROOT,
+        text=True,
+    ).splitlines()
+    banned_patterns = (
+        "corpus/",
+        "harness/",
+        "corpus_external.py",
+        "corpus_triage.py",
+        "_lineage_diff.py",
+        "datahub_compare.py",
+        "corpus_eval.py",
+        "corpus_oracle.py",
+        "manifest_slice.py",
+        "residual_rank.py",
+    )
+    violations = [
+        path
+        for path in tracked
+        if any(pattern in path for pattern in banned_patterns)
+    ]
     assert violations == []
 
 

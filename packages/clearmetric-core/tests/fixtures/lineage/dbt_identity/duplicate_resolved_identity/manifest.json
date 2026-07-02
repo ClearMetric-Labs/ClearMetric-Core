@@ -11,8 +11,15 @@
       "schema": "public",
       "database": "db1",
       "compiled_code": "select 1 as id",
-      "depends_on": { "nodes": [] },
-      "columns": { "id": { "name": "id" } }
+      "depends_on": {
+        "nodes": []
+      },
+      "columns": {
+        "id": {
+          "name": "id",
+          "data_type": "varchar"
+        }
+      }
     },
     "model.dup.orders_b": {
       "resource_type": "model",
@@ -22,8 +29,15 @@
       "schema": "public",
       "database": "db1",
       "compiled_code": "select 2 as id",
-      "depends_on": { "nodes": [] },
-      "columns": { "id": { "name": "id" } }
+      "depends_on": {
+        "nodes": []
+      },
+      "columns": {
+        "id": {
+          "name": "id",
+          "data_type": "varchar"
+        }
+      }
     }
   }
 }

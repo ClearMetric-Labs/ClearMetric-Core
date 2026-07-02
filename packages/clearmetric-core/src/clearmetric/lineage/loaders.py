@@ -3,17 +3,38 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import Literal, TypedDict, cast
 
 from clearmetric.core import leaf_name, normalize_identifier
+from clearmetric.core.models import Warning
 
 from .errors import LineageInputError
+from .schema import (
+    ResolverTypeOverlay,
+    TypeSource,
+    _TypedDataset,
+    overlay_types_from_dbt_catalog,
+    resolve_dataset_column_types,
+    to_sqlglot_schema,
+)
 from .sql_analyzer import list_table_references
 
 ProjectDatasetKind = Literal["local", "root"]
 InputKind = Literal["dbt_manifest", "sql_folder"]
+
+
+class DbtDatasetMetadata(TypedDict):
+    unique_id: str
+    package_name: str | None
+    manifest_name: str | None
+    alias: str | None
+    database: str | None
+    schema_name: str | None
+    relation_name: str | None
+    resource_type: str | None
 
 
 @dataclass(frozen=True)
@@ -24,6 +45,8 @@ class ProjectDataset:
     dependency_names: tuple[str, ...]
     declared_columns: tuple[str, ...]
     evidence_file: str | None
+    column_types: dict[str, str] = field(default_factory=dict)
+    type_sources: dict[str, TypeSource] = field(default_factory=dict)
     unique_id: str | None = None
     package_name: str | None = None
     manifest_name: str | None = None
@@ -47,6 +70,7 @@ class ProjectInput:
     label: str
     datasets: dict[str, ProjectDataset]
     manifest_compile_report: ManifestCompileReport | None = None
+    type_warnings: tuple[Warning, ...] = field(default_factory=tuple)
 
     def local_dataset_names(self) -> set[str]:
         return {
@@ -55,15 +79,23 @@ class ProjectInput:
             if dataset.kind == "local"
         }
 
-    def root_schema(self) -> dict[str, dict[str, str]]:
-        schema: dict[str, dict[str, str]] = {}
-        for dataset in self.datasets.values():
-            if dataset.kind != "root" or not dataset.declared_columns:
-                continue
-            schema[dataset.name] = {
-                column_name: "text" for column_name in dataset.declared_columns
-            }
-        return schema
+    def typed_schema(
+        self,
+        *,
+        include_local: set[str] | None = None,
+        accumulated: dict[str, dict[str, str]] | None = None,
+    ) -> dict[str, dict[str, str]]:
+        """Return sqlglot schema with resolved types only."""
+        base = to_sqlglot_schema(
+            cast(Mapping[str, _TypedDataset], self.datasets),
+            include_local=include_local,
+        )
+        if accumulated is None:
+            return base
+        merged = dict(accumulated)
+        for name, columns in base.items():
+            merged.setdefault(name, {}).update(columns)
+        return merged
 
     def sources_for(self, dataset_name: str) -> dict[str, str]:
         local_names = self.local_dataset_names()
@@ -81,7 +113,13 @@ class ProjectInput:
         }
 
 
-def load_project(path: str | Path, *, dialect: str) -> ProjectInput:
+def load_project(
+    path: str | Path,
+    *,
+    dialect: str,
+    warehouse_overlay: ResolverTypeOverlay | None = None,
+    strict_types: bool = False,
+) -> ProjectInput:
     target = Path(path).expanduser().resolve()
     if not target.exists():
         raise LineageInputError(f"Project input does not exist: {target}")
@@ -90,13 +128,27 @@ def load_project(path: str | Path, *, dialect: str) -> ProjectInput:
             raise LineageInputError(
                 "clearmetric-core file input must be a dbt manifest.json."
             )
-        return _load_manifest_project(target)
+        return _load_manifest_project(
+            target,
+            dialect=dialect,
+            warehouse_overlay=warehouse_overlay,
+            strict_types=strict_types,
+        )
     if target.is_dir():
-        return _load_sql_folder_project(target, dialect=dialect)
+        project = _load_sql_folder_project(target, dialect=dialect)
+        if warehouse_overlay is not None:
+            project = _with_warehouse_overlay(project, warehouse_overlay)
+        return project
     raise LineageInputError(f"Unsupported project input path: {target}")
 
 
-def _load_manifest_project(path: Path) -> ProjectInput:
+def _load_manifest_project(
+    path: Path,
+    *,
+    dialect: str,
+    warehouse_overlay: ResolverTypeOverlay | None,
+    strict_types: bool,
+) -> ProjectInput:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
@@ -109,6 +161,7 @@ def _load_manifest_project(path: Path) -> ProjectInput:
 
     node_payloads = _collect_manifest_node_payloads(payload)
     unique_id_to_identity = _build_unique_id_to_identity(node_payloads)
+    manifest_types: dict[str, dict[str, str | None]] = {}
 
     datasets: dict[str, ProjectDataset] = {}
     models_total = 0
@@ -119,6 +172,8 @@ def _load_manifest_project(path: Path) -> ProjectInput:
             continue
         identity = unique_id_to_identity[unique_id]
         dbt_fields = _dbt_metadata_fields(node_payload, unique_id=unique_id)
+        declared_columns, raw_types = _column_metadata_from_manifest_node(node_payload)
+        manifest_types[identity] = raw_types
         if resource_type == "model":
             models_total += 1
             sql = _read_compiled_sql(path, node_payload)
@@ -132,7 +187,7 @@ def _load_manifest_project(path: Path) -> ProjectInput:
                 kind="local",
                 sql=sql,
                 dependency_names=depends_on,
-                declared_columns=_columns_from_manifest_node(node_payload),
+                declared_columns=declared_columns,
                 evidence_file=_compiled_path_label(node_payload),
                 **dbt_fields,
             )
@@ -142,7 +197,7 @@ def _load_manifest_project(path: Path) -> ProjectInput:
                 kind="root",
                 sql=None,
                 dependency_names=(),
-                declared_columns=_columns_from_manifest_node(node_payload),
+                declared_columns=declared_columns,
                 evidence_file=None,
                 **dbt_fields,
             )
@@ -151,6 +206,45 @@ def _load_manifest_project(path: Path) -> ProjectInput:
         raise LineageInputError(f"Manifest produced no usable datasets: {path}")
 
     datasets = _ensure_root_dependencies(datasets)
+
+    catalog_path = path.parent / "catalog.json"
+    catalog_overlay = overlay_types_from_dbt_catalog(
+        cast(Mapping[str, _TypedDataset], datasets),
+        catalog_path,
+        dialect=dialect,
+        strict=strict_types,
+    )
+    type_warnings: list[Warning] = []
+    merged_datasets: dict[str, ProjectDataset] = {}
+    for name, dataset in datasets.items():
+        column_types, type_sources, resolved_warnings = resolve_dataset_column_types(
+            dataset_name=name,
+            declared_columns=dataset.declared_columns,
+            manifest_types=manifest_types.get(name, {}),
+            catalog_overlay=catalog_overlay,
+            warehouse_overlay=warehouse_overlay,
+            dialect=dialect,
+            strict=strict_types,
+        )
+        type_warnings.extend(resolved_warnings)
+        merged_datasets[name] = ProjectDataset(
+            name=dataset.name,
+            kind=dataset.kind,
+            sql=dataset.sql,
+            dependency_names=dataset.dependency_names,
+            declared_columns=dataset.declared_columns,
+            column_types=column_types,
+            type_sources=type_sources,
+            evidence_file=dataset.evidence_file,
+            unique_id=dataset.unique_id,
+            package_name=dataset.package_name,
+            manifest_name=dataset.manifest_name,
+            alias=dataset.alias,
+            database=dataset.database,
+            schema_name=dataset.schema_name,
+            relation_name=dataset.relation_name,
+            resource_type=dataset.resource_type,
+        )
 
     project_name = _manifest_project_name(payload)
     label = project_name or path.parent.name
@@ -162,8 +256,9 @@ def _load_manifest_project(path: Path) -> ProjectInput:
     return ProjectInput(
         input_kind="dbt_manifest",
         label=label,
-        datasets=datasets,
+        datasets=merged_datasets,
         manifest_compile_report=compile_report,
+        type_warnings=tuple(type_warnings),
     )
 
 
@@ -232,6 +327,18 @@ def resolve_dbt_dataset_identity(node_payload: dict) -> str:
     raise LineageInputError("dbt manifest node is missing a usable identity")
 
 
+def resolve_ref_relation(
+    reference: str,
+    *,
+    project: ProjectInput,
+    alias_map: dict[str, str] | None = None,
+) -> str:
+    """Resolve a SQL ref/source reference to canonical relation id at the load boundary."""
+    from .relations import normalize_relation_id
+
+    return normalize_relation_id(reference, project=project, alias_map=alias_map)
+
+
 def dbt_aspect_for_dataset(dataset: ProjectDataset) -> dict[str, str] | None:
     if dataset.unique_id is None:
         return None
@@ -248,9 +355,7 @@ def dbt_aspect_for_dataset(dataset: ProjectDataset) -> dict[str, str] | None:
     return {key: value for key, value in aspect.items() if value}
 
 
-def _dbt_metadata_fields(
-    node_payload: dict, *, unique_id: str
-) -> dict[str, str | None]:
+def _dbt_metadata_fields(node_payload: dict, *, unique_id: str) -> DbtDatasetMetadata:
     return {
         "unique_id": unique_id,
         "package_name": _optional_string(node_payload.get("package_name")),
@@ -372,23 +477,28 @@ def _resolve_manifest_relative_path(manifest_path: Path, relative_path: str) -> 
     return candidate
 
 
-def _columns_from_manifest_node(node_payload: dict) -> tuple[str, ...]:
+def _column_metadata_from_manifest_node(
+    node_payload: dict,
+) -> tuple[tuple[str, ...], dict[str, str | None]]:
     columns = node_payload.get("columns", {})
     if columns is None:
-        return ()
+        return (), {}
     if not isinstance(columns, dict):
         raise LineageInputError("Manifest columns must be an object")
 
     column_names: list[str] = []
+    raw_types: dict[str, str | None] = {}
     for column_name, column_payload in columns.items():
         if not isinstance(column_payload, dict):
             raise LineageInputError(
                 f"Manifest column entry {column_name!r} must be an object"
             )
-        name = str(column_payload.get("name") or "").strip()
+        name = str(column_payload.get("name") or column_name).strip()
         if name:
             column_names.append(name)
-    return tuple(column_names)
+            data_type = column_payload.get("data_type")
+            raw_types[name] = str(data_type).strip() if data_type else None
+    return tuple(column_names), raw_types
 
 
 def _load_sql_folder_project(path: Path, *, dialect: str) -> ProjectInput:
@@ -429,7 +539,6 @@ def _load_sql_folder_project(path: Path, *, dialect: str) -> ProjectInput:
                 }
             )
         except LineageInputError:
-            # Unparseable files still load; build emits lineage_resolution_failed per dataset.
             dependency_names = ()
         current = datasets[dataset_name]
         datasets[dataset_name] = ProjectDataset(
@@ -446,3 +555,71 @@ def _load_sql_folder_project(path: Path, *, dialect: str) -> ProjectInput:
         label=path.name,
         datasets=datasets,
     )
+
+
+def _with_warehouse_overlay(
+    project: ProjectInput,
+    overlay: ResolverTypeOverlay,
+) -> ProjectInput:
+    return ProjectInput(
+        input_kind=project.input_kind,
+        label=project.label,
+        datasets=_apply_warehouse_overlay_to_datasets(project.datasets, overlay),
+        manifest_compile_report=project.manifest_compile_report,
+        type_warnings=project.type_warnings,
+    )
+
+
+def _apply_warehouse_overlay_to_datasets(
+    datasets: dict[str, ProjectDataset],
+    overlay: ResolverTypeOverlay,
+) -> dict[str, ProjectDataset]:
+    updated = dict(datasets)
+    for dataset_name, column_entries in overlay.by_dataset.items():
+        column_types = {
+            column_name: entry.sqlglot_type
+            for column_name, entry in column_entries.items()
+        }
+        type_sources: dict[str, TypeSource] = {
+            column_name: entry.source for column_name, entry in column_entries.items()
+        }
+        declared_columns = tuple(sorted(column_entries))
+        if dataset_name not in updated:
+            updated[dataset_name] = ProjectDataset(
+                name=dataset_name,
+                kind="root",
+                sql=None,
+                dependency_names=(),
+                declared_columns=declared_columns,
+                evidence_file=None,
+                column_types=column_types,
+                type_sources=type_sources,
+            )
+            continue
+        existing = updated[dataset_name]
+        merged_types = dict(existing.column_types)
+        merged_types.update(column_types)
+        merged_sources = dict(existing.type_sources)
+        merged_sources.update(type_sources)
+        merged_declared = tuple(
+            dict.fromkeys((*existing.declared_columns, *declared_columns))
+        )
+        updated[dataset_name] = ProjectDataset(
+            name=existing.name,
+            kind=existing.kind,
+            sql=existing.sql,
+            dependency_names=existing.dependency_names,
+            declared_columns=merged_declared,
+            evidence_file=existing.evidence_file,
+            column_types=merged_types,
+            type_sources=merged_sources,
+            unique_id=existing.unique_id,
+            package_name=existing.package_name,
+            manifest_name=existing.manifest_name,
+            alias=existing.alias,
+            database=existing.database,
+            schema_name=existing.schema_name,
+            relation_name=existing.relation_name,
+            resource_type=existing.resource_type,
+        )
+    return updated

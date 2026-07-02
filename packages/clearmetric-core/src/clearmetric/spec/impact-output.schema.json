@@ -30,6 +30,17 @@
     "derivation": {
       "type": "array",
       "items": { "$ref": "#/$defs/derivation_entry" }
+    },
+    "resolver_completeness": {
+      "type": ["string", "null"],
+      "enum": ["complete", "partial", "unknown", null]
+    },
+    "unknown_edges_possible": {
+      "type": ["boolean", "null"]
+    },
+    "blocking_findings": {
+      "type": "array",
+      "items": { "type": "string" }
     }
   },
   "$defs": {

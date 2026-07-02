@@ -1,0 +1,6 @@
+dialect: postgres
+mode: exact_edges
+derives_from:
+- - column:report.amount
+  - column:raw_orders.amount
+warnings: []

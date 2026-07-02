@@ -37,7 +37,7 @@ dependencies = [
     "jsonschema>=4.0",
     "pydantic>=2.10.0",
     "PyYAML>=6.0",
-    "sqlglot>=25.0.0",
+    "sqlglot==30.0.3",
     "pbi-parsers>=0.9.5",
 ]
 

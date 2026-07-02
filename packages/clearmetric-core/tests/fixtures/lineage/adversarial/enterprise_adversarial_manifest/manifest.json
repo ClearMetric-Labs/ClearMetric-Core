@@ -5,19 +5,24 @@
       "name": "table_a",
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         },
         "status": {
-          "name": "status"
+          "name": "status",
+          "data_type": "varchar"
         },
         "created_at": {
-          "name": "created_at"
+          "name": "created_at",
+          "data_type": "varchar"
         }
       }
     },
@@ -26,19 +31,24 @@
       "name": "table_b",
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         },
         "status": {
-          "name": "status"
+          "name": "status",
+          "data_type": "varchar"
         },
         "region": {
-          "name": "region"
+          "name": "region",
+          "data_type": "varchar"
         }
       }
     },
@@ -47,16 +57,20 @@
       "name": "users",
       "columns": {
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "email": {
-          "name": "email"
+          "name": "email",
+          "data_type": "varchar"
         },
         "country": {
-          "name": "country"
+          "name": "country",
+          "data_type": "varchar"
         },
         "created_at": {
-          "name": "created_at"
+          "name": "created_at",
+          "data_type": "varchar"
         }
       }
     },
@@ -72,19 +86,24 @@
       },
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         },
         "status": {
-          "name": "status"
+          "name": "status",
+          "data_type": "varchar"
         },
         "created_at": {
-          "name": "created_at"
+          "name": "created_at",
+          "data_type": "varchar"
         }
       }
     },
@@ -100,19 +119,24 @@
       },
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         },
         "status": {
-          "name": "status"
+          "name": "status",
+          "data_type": "varchar"
         },
         "region": {
-          "name": "region"
+          "name": "region",
+          "data_type": "varchar"
         }
       }
     },
@@ -128,16 +152,20 @@
       },
       "columns": {
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "email": {
-          "name": "email"
+          "name": "email",
+          "data_type": "varchar"
         },
         "country": {
-          "name": "country"
+          "name": "country",
+          "data_type": "varchar"
         },
         "created_at": {
-          "name": "created_at"
+          "name": "created_at",
+          "data_type": "varchar"
         }
       }
     },
@@ -153,19 +181,24 @@
       },
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         },
         "status": {
-          "name": "status"
+          "name": "status",
+          "data_type": "varchar"
         },
         "created_at": {
-          "name": "created_at"
+          "name": "created_at",
+          "data_type": "varchar"
         }
       }
     },
@@ -182,22 +215,28 @@
       },
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         },
         "status": {
-          "name": "status"
+          "name": "status",
+          "data_type": "varchar"
         },
         "created_at": {
-          "name": "created_at"
+          "name": "created_at",
+          "data_type": "varchar"
         },
         "email": {
-          "name": "email"
+          "name": "email",
+          "data_type": "varchar"
         }
       }
     },
@@ -214,13 +253,16 @@
       },
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         },
         "source_label": {
-          "name": "source_label"
+          "name": "source_label",
+          "data_type": "varchar"
         }
       }
     },
@@ -237,16 +279,20 @@
       },
       "columns": {
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         },
         "status": {
-          "name": "status"
+          "name": "status",
+          "data_type": "varchar"
         },
         "created_at": {
-          "name": "created_at"
+          "name": "created_at",
+          "data_type": "varchar"
         }
       }
     },
@@ -263,16 +309,20 @@
       },
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "parent_user_id": {
-          "name": "parent_user_id"
+          "name": "parent_user_id",
+          "data_type": "varchar"
         },
         "parent_amount": {
-          "name": "parent_amount"
+          "name": "parent_amount",
+          "data_type": "varchar"
         }
       }
     },
@@ -288,13 +338,16 @@
       },
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         }
       }
     },
@@ -310,13 +363,16 @@
       },
       "columns": {
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         },
         "total_amount": {
-          "name": "total_amount"
+          "name": "total_amount",
+          "data_type": "varchar"
         }
       }
     },
@@ -333,13 +389,16 @@
       },
       "columns": {
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "email": {
-          "name": "email"
+          "name": "email",
+          "data_type": "varchar"
         },
         "max_user_amount": {
-          "name": "max_user_amount"
+          "name": "max_user_amount",
+          "data_type": "varchar"
         }
       }
     },
@@ -355,10 +414,12 @@
       },
       "columns": {
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "amt_doubled": {
-          "name": "amt_doubled"
+          "name": "amt_doubled",
+          "data_type": "varchar"
         }
       }
     },
@@ -374,16 +435,20 @@
       },
       "columns": {
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "net": {
-          "name": "net"
+          "name": "net",
+          "data_type": "varchar"
         },
         "tax_portion": {
-          "name": "tax_portion"
+          "name": "tax_portion",
+          "data_type": "varchar"
         },
         "combined": {
-          "name": "combined"
+          "name": "combined",
+          "data_type": "varchar"
         }
       }
     },
@@ -399,16 +464,20 @@
       },
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "row_num": {
-          "name": "row_num"
+          "name": "row_num",
+          "data_type": "varchar"
         },
         "running_total": {
-          "name": "running_total"
+          "name": "running_total",
+          "data_type": "varchar"
         }
       }
     },
@@ -424,13 +493,16 @@
       },
       "columns": {
         "user id": {
-          "name": "user id"
+          "name": "user id",
+          "data_type": "varchar"
         },
         "amount usd": {
-          "name": "amount usd"
+          "name": "amount usd",
+          "data_type": "varchar"
         },
         "status": {
-          "name": "status"
+          "name": "status",
+          "data_type": "varchar"
         }
       }
     },
@@ -446,13 +518,16 @@
       },
       "columns": {
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "gross": {
-          "name": "gross"
+          "name": "gross",
+          "data_type": "varchar"
         },
         "state": {
-          "name": "state"
+          "name": "state",
+          "data_type": "varchar"
         }
       }
     },
@@ -468,13 +543,16 @@
       },
       "columns": {
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "net_gross": {
-          "name": "net_gross"
+          "name": "net_gross",
+          "data_type": "varchar"
         },
         "state": {
-          "name": "state"
+          "name": "state",
+          "data_type": "varchar"
         }
       }
     },
@@ -490,13 +568,16 @@
       },
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "user_id": {
-          "name": "user_id"
+          "name": "user_id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         }
       }
     }

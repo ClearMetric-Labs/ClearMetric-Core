@@ -1,0 +1,1 @@
+select amount from middle

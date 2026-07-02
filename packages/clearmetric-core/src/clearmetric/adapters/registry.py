@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
+from pathlib import Path
+from typing import cast
 
 from clearmetric.core import CatalogArtifact
 from clearmetric.core.errors import AdapterError
 from clearmetric.core.experimental import require_experimental_source
 from clearmetric.core.project import ClearMetricProject
+from clearmetric.lineage import load_project
+from clearmetric.lineage.schema import ResolverTypeOverlay, _TypedDataset
 
 from .dbt import ingest_dbt
 from .intent import ingest_intent
 from .sql import ingest_sql
-from .warehouse import ingest_warehouse
+from .warehouse import ingest_warehouse, resolver_schema_from_warehouse
 
 SOURCE_ORDER = ("warehouse", "dbt", "sql", "intent")
 
@@ -45,8 +49,24 @@ def enabled_sources(project: ClearMetricProject) -> list[str]:
     return configured
 
 
+def _warehouse_type_overlay(project: ClearMetricProject) -> ResolverTypeOverlay | None:
+    warehouse = project.sources.warehouse
+    dbt = project.sources.dbt
+    if warehouse is None or dbt is None or not dbt.manifest:
+        return None
+    skeleton = load_project(dbt.manifest, dialect=project.dialect)
+    overlay, _warnings = resolver_schema_from_warehouse(
+        cast(Mapping[str, _TypedDataset], skeleton.datasets),
+        Path(warehouse.path),
+        dialect=project.dialect,
+    )
+    return overlay
+
+
 def ingest_source(kind: str, project: ClearMetricProject) -> CatalogArtifact:
     require_experimental_source(kind)
+    if kind == "dbt":
+        return ingest_dbt(project, warehouse_overlay=_warehouse_type_overlay(project))
     adapter = _ADAPTERS.get(kind)
     if adapter is None:
         raise AdapterError(f"unknown source kind: {kind}")

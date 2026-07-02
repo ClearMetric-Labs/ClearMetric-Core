@@ -9,9 +9,18 @@
       "name": "raw_customers",
       "unique_id": "seed.jaffle_shop.raw_customers",
       "columns": {
-        "id": {"name": "id"},
-        "first_name": {"name": "first_name"},
-        "last_name": {"name": "last_name"}
+        "id": {
+          "name": "id",
+          "data_type": "varchar"
+        },
+        "first_name": {
+          "name": "first_name",
+          "data_type": "varchar"
+        },
+        "last_name": {
+          "name": "last_name",
+          "data_type": "varchar"
+        }
       }
     },
     "seed.jaffle_shop.raw_orders": {
@@ -19,10 +28,22 @@
       "name": "raw_orders",
       "unique_id": "seed.jaffle_shop.raw_orders",
       "columns": {
-        "id": {"name": "id"},
-        "user_id": {"name": "user_id"},
-        "order_date": {"name": "order_date"},
-        "status": {"name": "status"}
+        "id": {
+          "name": "id",
+          "data_type": "varchar"
+        },
+        "user_id": {
+          "name": "user_id",
+          "data_type": "varchar"
+        },
+        "order_date": {
+          "name": "order_date",
+          "data_type": "varchar"
+        },
+        "status": {
+          "name": "status",
+          "data_type": "varchar"
+        }
       }
     },
     "seed.jaffle_shop.raw_payments": {
@@ -30,10 +51,22 @@
       "name": "raw_payments",
       "unique_id": "seed.jaffle_shop.raw_payments",
       "columns": {
-        "id": {"name": "id"},
-        "order_id": {"name": "order_id"},
-        "payment_method": {"name": "payment_method"},
-        "amount": {"name": "amount"}
+        "id": {
+          "name": "id",
+          "data_type": "varchar"
+        },
+        "order_id": {
+          "name": "order_id",
+          "data_type": "varchar"
+        },
+        "payment_method": {
+          "name": "payment_method",
+          "data_type": "varchar"
+        },
+        "amount": {
+          "name": "amount",
+          "data_type": "varchar"
+        }
       }
     },
     "model.jaffle_shop.stg_customers": {
@@ -42,12 +75,23 @@
       "unique_id": "model.jaffle_shop.stg_customers",
       "compiled_path": "compiled/stg_customers.sql",
       "depends_on": {
-        "nodes": ["seed.jaffle_shop.raw_customers"]
+        "nodes": [
+          "seed.jaffle_shop.raw_customers"
+        ]
       },
       "columns": {
-        "customer_id": {"name": "customer_id"},
-        "first_name": {"name": "first_name"},
-        "last_name": {"name": "last_name"}
+        "customer_id": {
+          "name": "customer_id",
+          "data_type": "varchar"
+        },
+        "first_name": {
+          "name": "first_name",
+          "data_type": "varchar"
+        },
+        "last_name": {
+          "name": "last_name",
+          "data_type": "varchar"
+        }
       }
     },
     "model.jaffle_shop.stg_orders": {
@@ -56,13 +100,27 @@
       "unique_id": "model.jaffle_shop.stg_orders",
       "compiled_path": "compiled/stg_orders.sql",
       "depends_on": {
-        "nodes": ["seed.jaffle_shop.raw_orders"]
+        "nodes": [
+          "seed.jaffle_shop.raw_orders"
+        ]
       },
       "columns": {
-        "order_id": {"name": "order_id"},
-        "customer_id": {"name": "customer_id"},
-        "order_date": {"name": "order_date"},
-        "status": {"name": "status"}
+        "order_id": {
+          "name": "order_id",
+          "data_type": "varchar"
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "data_type": "varchar"
+        },
+        "order_date": {
+          "name": "order_date",
+          "data_type": "varchar"
+        },
+        "status": {
+          "name": "status",
+          "data_type": "varchar"
+        }
       }
     },
     "model.jaffle_shop.stg_payments": {
@@ -71,13 +129,27 @@
       "unique_id": "model.jaffle_shop.stg_payments",
       "compiled_path": "compiled/stg_payments.sql",
       "depends_on": {
-        "nodes": ["seed.jaffle_shop.raw_payments"]
+        "nodes": [
+          "seed.jaffle_shop.raw_payments"
+        ]
       },
       "columns": {
-        "payment_id": {"name": "payment_id"},
-        "order_id": {"name": "order_id"},
-        "payment_method": {"name": "payment_method"},
-        "amount": {"name": "amount"}
+        "payment_id": {
+          "name": "payment_id",
+          "data_type": "varchar"
+        },
+        "order_id": {
+          "name": "order_id",
+          "data_type": "varchar"
+        },
+        "payment_method": {
+          "name": "payment_method",
+          "data_type": "varchar"
+        },
+        "amount": {
+          "name": "amount",
+          "data_type": "varchar"
+        }
       }
     },
     "model.jaffle_shop.orders": {
@@ -92,15 +164,42 @@
         ]
       },
       "columns": {
-        "order_id": {"name": "order_id"},
-        "customer_id": {"name": "customer_id"},
-        "order_date": {"name": "order_date"},
-        "status": {"name": "status"},
-        "credit_card_amount": {"name": "credit_card_amount"},
-        "coupon_amount": {"name": "coupon_amount"},
-        "bank_transfer_amount": {"name": "bank_transfer_amount"},
-        "gift_card_amount": {"name": "gift_card_amount"},
-        "amount": {"name": "amount"}
+        "order_id": {
+          "name": "order_id",
+          "data_type": "varchar"
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "data_type": "varchar"
+        },
+        "order_date": {
+          "name": "order_date",
+          "data_type": "varchar"
+        },
+        "status": {
+          "name": "status",
+          "data_type": "varchar"
+        },
+        "credit_card_amount": {
+          "name": "credit_card_amount",
+          "data_type": "varchar"
+        },
+        "coupon_amount": {
+          "name": "coupon_amount",
+          "data_type": "varchar"
+        },
+        "bank_transfer_amount": {
+          "name": "bank_transfer_amount",
+          "data_type": "varchar"
+        },
+        "gift_card_amount": {
+          "name": "gift_card_amount",
+          "data_type": "varchar"
+        },
+        "amount": {
+          "name": "amount",
+          "data_type": "varchar"
+        }
       }
     },
     "model.jaffle_shop.customers": {
@@ -116,13 +215,34 @@
         ]
       },
       "columns": {
-        "customer_id": {"name": "customer_id"},
-        "first_name": {"name": "first_name"},
-        "last_name": {"name": "last_name"},
-        "first_order": {"name": "first_order"},
-        "most_recent_order": {"name": "most_recent_order"},
-        "number_of_orders": {"name": "number_of_orders"},
-        "customer_lifetime_value": {"name": "customer_lifetime_value"}
+        "customer_id": {
+          "name": "customer_id",
+          "data_type": "varchar"
+        },
+        "first_name": {
+          "name": "first_name",
+          "data_type": "varchar"
+        },
+        "last_name": {
+          "name": "last_name",
+          "data_type": "varchar"
+        },
+        "first_order": {
+          "name": "first_order",
+          "data_type": "varchar"
+        },
+        "most_recent_order": {
+          "name": "most_recent_order",
+          "data_type": "varchar"
+        },
+        "number_of_orders": {
+          "name": "number_of_orders",
+          "data_type": "varchar"
+        },
+        "customer_lifetime_value": {
+          "name": "customer_lifetime_value",
+          "data_type": "varchar"
+        }
       }
     }
   },

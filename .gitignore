@@ -1,3 +1,43 @@
+# Local resolver regression corpus (hand-verified, not committed)
+/corpus/
+
+# Private harness (comparator orchestrator, integration tests)
+/harness/
+
+# Harness orchestrator during transition (prefer /harness/scripts/)
+packages/clearmetric-core/scripts/corpus_external.py
+packages/clearmetric-core/scripts/corpus_triage.py
+packages/clearmetric-core/scripts/_lineage_diff.py
+
+# Harness-only tests during transition (prefer /harness/tests/)
+packages/clearmetric-core/tests/lineage/test_corpus_integrity.py
+packages/clearmetric-core/tests/lineage/test_lineage_diff_slice.py
+packages/clearmetric-core/tests/lineage/test_datahub_compare.py
+packages/clearmetric-core/tests/lineage/test_residual_rank.py
+packages/clearmetric-core/tests/lineage/test_local_corpus.py
+scripts/hooks/pre-push-local-corpus.sh
+
+# Public template: synthetic case only (no pins, scopes, or runbooks)
+corpus.example/EXTERNAL_VALIDATION.md
+corpus.example/pins.yaml
+corpus.example/reports/
+corpus.example/profiles/
+
+# External dbt clones outside /corpus/ (if ever used)
+**/external-projects/
+
+# Comparator / measurement output outside /corpus/
+**/comparator/runs/
+**/.refresh_runs/
+**/_residual_checkpoints/
+**/run-metadata.json
+
+# dbt compile artifacts (preserve committed demo target/)
+**/dbt_packages/
+**/target/
+!examples/catalog-demo/target/
+!examples/catalog-demo/target/**
+
 # OS
 .DS_Store
 Thumbs.db

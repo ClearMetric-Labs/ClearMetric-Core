@@ -68,6 +68,8 @@ warnings:
   code: unresolved_output_source
 - dataset: var_window_b_named_window
   code: unresolved_lineage
+- dataset: var_window_b_named_window
+  code: unresolved_output_source
 - dataset: var_window_c_lag
   code: unresolved_lineage
 - dataset: var_window_c_lag

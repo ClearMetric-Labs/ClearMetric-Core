@@ -37,3 +37,16 @@ Compile-time **security floor** and posture-aware cleaner checks apply on enforc
 See [Artifact contract](reference/contract.md).
 
 Power BI module scope and full boundary tables: [v1-boundary.md](v1-boundary.md).
+
+## Resolver rollout freeze
+
+During the resolver program rollout, **do not expand consumer surfaces or demo scripts**
+that assume complete lineage until every compiled model node carries a persisted
+`lineage_resolution` aspect with a non-null `resolver_status`.
+
+Impact, catalog emitters, and demo flows must read resolver completeness from the owning
+**table** node's `lineage_resolution` aspect (column traversals aggregate from the table
+owner). Partial or schema-missing models must surface warnings — never silent complete
+lineage.
+
+See [adoption-gate.md](adoption-gate.md) for the dev directive and oracle rules.

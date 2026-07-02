@@ -7,12 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from _sqlglot_baseline import (
-    build_raw_downstream_index,
-    build_root_schema,
-    build_sources_by_name,
-    load_fixture,
-)
+from _sqlglot_baseline import build_raw_downstream_index
 from clearmetric.graph import trace_downstream_from_artifact
 from clearmetric.lineage import build_catalog_artifact_from_project, load_project
 
@@ -34,14 +29,20 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Compare clearmetric-core against baseline lineage approaches."
     )
-    parser.add_argument("baseline", choices=("sqlglot", "dbt_manifest", "canva"))
+    parser.add_argument(
+        "baseline",
+        choices=("sqlglot", "dbt_manifest", "canva"),
+    )
+    parser.add_argument("--manifest", type=Path, default=JAFFLE_MANIFEST)
+    parser.add_argument("--dialect", default="postgres")
+    parser.add_argument("--report", type=Path, default=None)
     args = parser.parse_args()
 
     if args.baseline == "sqlglot":
-        print(compare_sqlglot())
+        print(compare_sqlglot(args.manifest, dialect=args.dialect))
         return 0
     if args.baseline == "dbt_manifest":
-        print(compare_dbt_manifest())
+        print(compare_dbt_manifest(args.manifest, dialect=args.dialect))
         return 0
     if args.baseline == "canva":
         print(compare_canva())
@@ -49,43 +50,34 @@ def main() -> int:
     raise SystemExit(f"Unsupported baseline {args.baseline!r}")
 
 
-def compare_sqlglot() -> str:
-    _manifest, nodes, sql_by_name = load_fixture(JAFFLE_MANIFEST)
-    sources_by_name = build_sources_by_name(nodes, sql_by_name)
-    root_schema = build_root_schema(nodes)
+def compare_sqlglot(manifest: Path, *, dialect: str) -> str:
     downstream_index = build_raw_downstream_index(
-        nodes=nodes,
-        sql_by_name=sql_by_name,
-        root_schema=root_schema,
-        sources_by_name=sources_by_name,
-        dialect="postgres",
+        manifest_path=manifest,
+        dialect=dialect,
     )
-    project = load_project(JAFFLE_MANIFEST, dialect="postgres")
-    artifact = build_catalog_artifact_from_project(project, dialect="postgres")
+    project = load_project(manifest, dialect=dialect)
+    artifact = build_catalog_artifact_from_project(project, dialect=dialect)
     downstream_result = trace_downstream_from_artifact(
         artifact,
         selection="raw_payments.amount",
     ).related_ids
 
-    manual_sources = len(sources_by_name)
-    manual_schema_tables = len(root_schema)
+    typed_schema = project.typed_schema()
     raw_downstream = downstream_index.get("raw_payments.amount", [])
     formatted_downstream = [item.removeprefix("column:") for item in downstream_result]
 
     lines = [
         "## sqlglot.lineage comparison",
         "",
-        f"- Raw sqlglot baseline required manual assembly of `{manual_sources}` model SQL sources and `{manual_schema_tables}` root schema tables before asking one downstream impact question.",
-        "- Raw sqlglot has no project-level downstream API; the baseline had to reverse-scan every modeled output column to answer `raw_payments.amount` impact.",
+        f"- Typed schema tables available to sqlglot: `{len(typed_schema)}`.",
         f"- Raw sqlglot reverse scan returned: `{raw_downstream}`.",
         f"- `clearmetric-core` downstream traversal returned: `{formatted_downstream}`.",
-        "- Differentiation: `clearmetric-core` owns project loading, reverse traversal, and stable `column:` IDs instead of leaving that glue to the caller.",
     ]
     return "\n".join(lines)
 
 
-def compare_dbt_manifest() -> str:
-    payload = json.loads(JAFFLE_MANIFEST.read_text(encoding="utf-8"))
+def compare_dbt_manifest(manifest: Path, *, dialect: str) -> str:
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
     child_map = payload.get("child_map", {})
     queue = list(child_map.get("seed.jaffle_shop.raw_payments", []))
     descendants: list[str] = []
@@ -99,8 +91,8 @@ def compare_dbt_manifest() -> str:
         queue.extend(child_map.get(current, []))
 
     model_names = [item.split(".")[-1] for item in descendants]
-    project = load_project(JAFFLE_MANIFEST, dialect="postgres")
-    artifact = build_catalog_artifact_from_project(project, dialect="postgres")
+    project = load_project(manifest, dialect=dialect)
+    artifact = build_catalog_artifact_from_project(project, dialect=dialect)
     column_downstream = trace_downstream_from_artifact(
         artifact,
         selection="raw_payments.amount",
@@ -110,9 +102,8 @@ def compare_dbt_manifest() -> str:
     lines = [
         "## dbt manifest lineage comparison",
         "",
-        f"- `child_map` from the dbt manifest shows model-level descendants of `raw_payments`: `{model_names}`.",
-        f"- `clearmetric-core` resolves the column-level blast radius for `raw_payments.amount`: `{formatted_columns}`.",
-        "- Differentiation: dbt manifest lineage is model-level DAG metadata; `clearmetric-core` answers the pre-merge column impact question directly.",
+        f"- `child_map` model descendants of `raw_payments`: `{model_names}`.",
+        f"- `clearmetric-core` column blast radius for `raw_payments.amount`: `{formatted_columns}`.",
     ]
     return "\n".join(lines)
 
@@ -122,8 +113,7 @@ def compare_canva() -> str:
         importlib.import_module("dbt_column_lineage_extractor")
     except ModuleNotFoundError as exc:
         raise SystemExit(
-            "Canva comparison requires the optional dependency `dbt-column-lineage-extractor`. "
-            "Install it in the active environment before running `compare_baselines.py canva`."
+            "Canva comparison requires `dbt-column-lineage-extractor`."
         ) from exc
 
     direct_help = subprocess.run(
@@ -144,12 +134,8 @@ def compare_canva() -> str:
     lines = [
         "## Canva extractor comparison",
         "",
-        "- Canva's extractor exposes a two-step workflow: `dbt_column_lineage_direct` builds direct lineage JSON files from `--manifest` plus `--catalog`, then `dbt_column_lineage_recursive` answers one model+column query from those generated files.",
-        "- `clearmetric-core` answers the same pre-merge downstream question in one headless command against a manifest or SQL folder, and emits a mergeable `CatalogArtifact` instead of tool-specific output files.",
-        "- Concrete CLI difference from the installed package help:",
-        f"  - direct command requires: `{_first_usage_line(direct_help.stdout)}`",
-        f"  - recursive command requires: `{_first_usage_line(recursive_help.stdout)}`",
-        "- Differentiation: Canva gives recursive column lineage and Mermaid output, but it does not replace ClearMetric Core's single-command impact traversal, shared artifact contract, or non-dbt SQL-folder path.",
+        f"- direct command: `{_first_usage_line(direct_help.stdout)}`",
+        f"- recursive command: `{_first_usage_line(recursive_help.stdout)}`",
     ]
     return "\n".join(lines)
 

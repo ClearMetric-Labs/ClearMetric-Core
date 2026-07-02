@@ -11,13 +11,16 @@
       "unique_id": "source.synthetic.dim_customers",
       "columns": {
         "customer_id": {
-          "name": "customer_id"
+          "name": "customer_id",
+          "data_type": "varchar"
         },
         "customer_name": {
-          "name": "customer_name"
+          "name": "customer_name",
+          "data_type": "varchar"
         },
         "customer_tier": {
-          "name": "customer_tier"
+          "name": "customer_tier",
+          "data_type": "varchar"
         }
       }
     },
@@ -27,13 +30,16 @@
       "unique_id": "seed.synthetic.orders",
       "columns": {
         "order_id": {
-          "name": "order_id"
+          "name": "order_id",
+          "data_type": "varchar"
         },
         "customer_id": {
-          "name": "customer_id"
+          "name": "customer_id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         }
       }
     },
@@ -50,16 +56,20 @@
       },
       "columns": {
         "customer_id": {
-          "name": "customer_id"
+          "name": "customer_id",
+          "data_type": "varchar"
         },
         "customer_name": {
-          "name": "customer_name"
+          "name": "customer_name",
+          "data_type": "varchar"
         },
         "customer_tier": {
-          "name": "customer_tier"
+          "name": "customer_tier",
+          "data_type": "varchar"
         },
         "total_revenue": {
-          "name": "total_revenue"
+          "name": "total_revenue",
+          "data_type": "varchar"
         }
       }
     }

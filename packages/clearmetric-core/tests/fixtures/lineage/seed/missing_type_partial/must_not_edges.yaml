@@ -1,0 +1,2 @@
+derives_from:
+  - [column:report.amount, column:raw_orders.id]

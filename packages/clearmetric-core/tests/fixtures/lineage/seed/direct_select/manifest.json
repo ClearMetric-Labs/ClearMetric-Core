@@ -1,0 +1,22 @@
+{
+  "metadata": {"project_name": "direct_select"},
+  "nodes": {
+    "seed.direct_select.raw_orders": {
+      "resource_type": "seed",
+      "name": "raw_orders",
+      "columns": {
+        "id": {"name": "id", "data_type": "integer"},
+        "amount": {"name": "amount", "data_type": "numeric"}
+      }
+    },
+    "model.direct_select.report": {
+      "resource_type": "model",
+      "name": "report",
+      "compiled_path": "compiled/report.sql",
+      "depends_on": {"nodes": ["seed.direct_select.raw_orders"]},
+      "columns": {
+        "amount": {"name": "amount", "data_type": "numeric"}
+      }
+    }
+  }
+}

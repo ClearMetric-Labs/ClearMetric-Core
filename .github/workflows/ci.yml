@@ -85,11 +85,7 @@ jobs:
 
       - name: Lineage trust gate
         run: |
-          python -m pytest -v \
-            packages/clearmetric-core/tests/lineage/test_corpus_invariants.py \
-            packages/clearmetric-core/tests/lineage/test_ground_truth.py \
-            packages/clearmetric-core/tests/lineage/test_value_lineage_oracle.py \
-            packages/clearmetric-core/tests/lineage/test_variant_warning_categories.py
+          python -m pytest -q packages/clearmetric-core/tests/lineage
           PYTHONPATH=packages/clearmetric-core \
             python packages/clearmetric-core/scripts/sweep_lineage_coverage.py
 

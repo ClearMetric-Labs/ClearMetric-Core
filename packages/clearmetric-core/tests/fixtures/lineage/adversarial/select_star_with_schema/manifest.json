@@ -8,10 +8,12 @@
       "name": "raw_orders",
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         }
       }
     },
@@ -26,10 +28,12 @@
       },
       "columns": {
         "id": {
-          "name": "id"
+          "name": "id",
+          "data_type": "varchar"
         },
         "amount": {
-          "name": "amount"
+          "name": "amount",
+          "data_type": "varchar"
         }
       }
     }
