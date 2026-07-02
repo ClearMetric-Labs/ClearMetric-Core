@@ -1,0 +1,28 @@
+{
+  "metadata": {"project_name": "cross_schema_short_ref"},
+  "nodes": {
+    "model.pkg_a.upstream": {
+      "resource_type": "model",
+      "name": "upstream",
+      "database": "warehouse",
+      "schema": "pkg_a",
+      "compiled_path": "compiled/upstream.sql",
+      "depends_on": {"nodes": []},
+      "columns": {
+        "label": {"name": "label", "data_type": "varchar"},
+        "member_key": {"name": "member_key", "data_type": "integer"}
+      }
+    },
+    "model.pkg_b.consumer": {
+      "resource_type": "model",
+      "name": "consumer",
+      "database": "warehouse",
+      "schema": "pkg_b",
+      "compiled_path": "compiled/consumer.sql",
+      "depends_on": {"nodes": ["model.pkg_a.upstream"]},
+      "columns": {
+        "output_value": {"name": "output_value", "data_type": "varchar"}
+      }
+    }
+  }
+}

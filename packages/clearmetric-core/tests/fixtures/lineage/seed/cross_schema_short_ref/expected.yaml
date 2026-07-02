@@ -1,0 +1,12 @@
+dialect: postgres
+mode: exact_edges
+derives_from:
+- - column:warehouse.pkg_b.consumer.output_value
+  - column:warehouse.pkg_a.upstream.label
+warnings:
+- dataset: upstream
+  code: unresolved_lineage
+  count: 2
+- dataset: upstream
+  code: unresolved_output_source
+  count: 2

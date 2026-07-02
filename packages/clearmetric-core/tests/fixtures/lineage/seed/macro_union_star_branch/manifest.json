@@ -1,0 +1,46 @@
+{
+  "metadata": {"project_name": "macro_union_star_branch"},
+  "nodes": {
+    "model.macro_union_star_branch.upstream_alpha": {
+      "resource_type": "model",
+      "name": "upstream_alpha",
+      "database": "warehouse",
+      "schema": "macro_union_star_branch",
+      "compiled_path": "compiled/upstream_alpha.sql",
+      "depends_on": {"nodes": []},
+      "columns": {
+        "data_source": {"name": "data_source", "data_type": "varchar"},
+        "record_id": {"name": "record_id", "data_type": "integer"}
+      }
+    },
+    "model.macro_union_star_branch.upstream_beta": {
+      "resource_type": "model",
+      "name": "upstream_beta",
+      "database": "warehouse",
+      "schema": "macro_union_star_branch",
+      "compiled_path": "compiled/upstream_beta.sql",
+      "depends_on": {"nodes": []},
+      "columns": {
+        "data_source": {"name": "data_source", "data_type": "varchar"},
+        "record_id": {"name": "record_id", "data_type": "integer"}
+      }
+    },
+    "model.macro_union_star_branch.downstream": {
+      "resource_type": "model",
+      "name": "downstream",
+      "database": "warehouse",
+      "schema": "macro_union_star_branch",
+      "compiled_path": "compiled/downstream.sql",
+      "depends_on": {
+        "nodes": [
+          "model.macro_union_star_branch.upstream_alpha",
+          "model.macro_union_star_branch.upstream_beta"
+        ]
+      },
+      "columns": {
+        "data_source": {"name": "data_source", "data_type": "varchar"},
+        "record_id": {"name": "record_id", "data_type": "integer"}
+      }
+    }
+  }
+}

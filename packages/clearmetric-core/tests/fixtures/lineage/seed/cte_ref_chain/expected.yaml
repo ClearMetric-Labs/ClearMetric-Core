@@ -1,0 +1,9 @@
+dialect: postgres
+mode: exact_edges
+derives_from:
+- - column:downstream.event_type
+  - column:upstream.event_type
+- - column:upstream.event_type
+  - column:raw_events.event_type
+- - column:upstream.event_id
+  - column:raw_events.event_id

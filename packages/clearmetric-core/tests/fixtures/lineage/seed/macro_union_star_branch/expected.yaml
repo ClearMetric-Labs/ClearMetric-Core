@@ -1,0 +1,27 @@
+dialect: postgres
+mode: exact_edges
+derives_from:
+- - column:warehouse.macro_union_star_branch.downstream.data_source
+  - column:warehouse.macro_union_star_branch.upstream_alpha.data_source
+- - column:warehouse.macro_union_star_branch.downstream.data_source
+  - column:warehouse.macro_union_star_branch.upstream_beta.data_source
+- - column:warehouse.macro_union_star_branch.downstream.record_id
+  - column:warehouse.macro_union_star_branch.upstream_alpha.record_id
+- - column:warehouse.macro_union_star_branch.downstream.record_id
+  - column:warehouse.macro_union_star_branch.upstream_beta.record_id
+warnings:
+- dataset: downstream
+  code: select_star_expanded
+  count: 1
+- dataset: upstream_alpha
+  code: unresolved_lineage
+  count: 2
+- dataset: upstream_beta
+  code: unresolved_lineage
+  count: 2
+- dataset: upstream_alpha
+  code: unresolved_output_source
+  count: 2
+- dataset: upstream_beta
+  code: unresolved_output_source
+  count: 2

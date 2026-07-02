@@ -1,0 +1,32 @@
+{
+  "metadata": {"project_name": "cte_ref_chain"},
+  "nodes": {
+    "seed.cte_ref_chain.raw_events": {
+      "resource_type": "seed",
+      "name": "raw_events",
+      "columns": {
+        "event_id": {"name": "event_id", "data_type": "integer"},
+        "event_type": {"name": "event_type", "data_type": "varchar"}
+      }
+    },
+    "model.cte_ref_chain.upstream": {
+      "resource_type": "model",
+      "name": "upstream",
+      "compiled_path": "compiled/upstream.sql",
+      "depends_on": {"nodes": ["seed.cte_ref_chain.raw_events"]},
+      "columns": {
+        "event_id": {"name": "event_id", "data_type": "integer"},
+        "event_type": {"name": "event_type", "data_type": "varchar"}
+      }
+    },
+    "model.cte_ref_chain.downstream": {
+      "resource_type": "model",
+      "name": "downstream",
+      "compiled_path": "compiled/downstream.sql",
+      "depends_on": {"nodes": ["model.cte_ref_chain.upstream"]},
+      "columns": {
+        "event_type": {"name": "event_type", "data_type": "varchar"}
+      }
+    }
+  }
+}
